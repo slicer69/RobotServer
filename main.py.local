@@ -1,0 +1,263 @@
+import machine
+import network
+import socket
+# import signal
+import sys
+import _thread
+import time
+from machine import Pin
+
+default_port = 40801
+ssid = "NetworkName"
+password = "NetworkPassword"
+
+# The Pico board's LED
+led = Pin("LED", Pin.OUT)
+# Are we flashing the LED?
+pico_blinking = 0
+
+# Update thread is active?
+update_thread = False
+updates_per_second = 1
+
+
+
+def enable_networking(wait_time):
+  attempts = 0
+  time.sleep(wait_time)
+  wlan = network.WLAN(network.STA_IF)
+  wlan.active(True)
+  wlan.connect(ssid, password)
+  while wlan.status() != 3 and attempts < 10:
+     time.sleep(1)
+     attempts += 1
+
+  if wlan.status() == 3:
+     address = wlan.ifconfig()
+     return address[0]
+  else:
+     
+     return False
+
+
+
+def help():
+   send_string = "Tasks I know how to do: \n\n"
+   send_string += "blink [times] - toggle LED on/off <times> or enable/disable if not number specified\n"
+   send_string += "echo [text] - repeats text back to client\n"
+   send_string += "hello - say Hello to the client\n"
+   send_string += "help - show this list of commands\n"
+   send_string += "light <on/off> - turn the LED on or off\n"
+   send_string += "sleep <seconds> - wait\n"
+   send_string += "temp - try to sense temperature (somewhat inaccurate)\n"
+   send_string += "exit - disconnect client\n\n"
+   return send_string
+    
+
+def do_blinking():
+   global pico_blinking
+
+   # Blink once for each number above zero
+   if pico_blinking > 0:
+      led.toggle()
+      pico_blinking -= 1
+   # Blink endlessly if below zero
+   elif pico_blinking < 0:
+       led.toggle()
+
+
+
+def Reset_Everything():
+    global pico_blinking
+    global update_thread
+    pico_blinking = 0
+    update_thread = False
+    led.value(1)     # Indicate we are ready for a new connection
+    
+
+def Update_Everything():
+    while update_thread:
+        do_blinking()
+        # Update robot?
+        time.sleep(1)
+    
+    
+    
+def blink(command_line, socket):
+    global pico_blinking
+   
+    if len(command_line) >= 2:
+        try:
+            blink_times = int(command_line[1])
+            send_string = "Blinking " + str(blink_times) + " times.\n"
+            pico_blinking = blink_times
+        except:
+            send_string = "I did not understand " + command_line[1] + "\n"
+
+    else:
+        # We did not get a number
+        if pico_blinking == 0:
+            pico_blinking = -1
+            send_string = "Blinking is now enabled.\n"
+        else:
+            pico_blinking = 0
+            send_string = "Blinking is now disabled.\n"
+            
+    return send_string
+
+ 
+
+def go_to_sleep(command_line, socket):
+    sleep_time = 1.0
+    if len(command_line) >= 2:
+        try:
+           sleep_time = float(command_line[1])
+        except:
+           send_string = "I did not understand " + command_line[1] + "\n"
+           socket.send( send_string.encode() )
+
+    send_string = "Sleeping for " + str(sleep_time) + " seconds.\n"
+    socket.send( send_string.encode() )
+    time.sleep(sleep_time)
+    send_string = "Waking.\n"
+    return send_string
+
+
+def light_on_off(command_line):
+   if len(command_line) >= 2:
+      if command_line[1] == "on":
+         led.value(1)
+         return_string = "Turned on LED.\n"
+      elif command_line[1] == "off":
+         led.value(0)
+         return_string = "Turned off LED.\n"
+      else:
+         return_string = "Command " + command_line[1] + " not recognized.\n"
+   else:
+      return_string = "Turn light on or off?\n"
+
+   return return_string
+
+
+def sense_temperature():
+    sensor_temp = machine.ADC(4)
+    conversion_factor = 3.3 / (65535)
+    try:
+       reading = sensor_temp.read_u16() * conversion_factor
+    except:
+       send_string = "Unable to read temperature sensor.\n"
+       return send_string
+    
+    try:
+       temperature = round(27 - (reading - 0.706)/0.001721, 2)
+       temperature -= 17.0
+       send_string = "Current temperature: " + str(temperature) + "C\n"
+    except:
+        send_string = "Unable to convert temperature.\n"
+    return send_string
+
+
+
+def parse_incoming_command(command, client_socket):
+    command_and_args = command.split()
+    return_value = True
+    args_length = len(command_and_args)
+
+    if args_length >= 1:
+      cmd = command_and_args[0].lower()
+
+    if args_length < 1:
+       send_string = "Nothing received\n"
+    elif cmd == "echo":
+       send_string = command + "\n"
+    elif cmd == "exit":
+       send_string = "Good-bye\n"
+       return_value = False
+    elif cmd == "hello":
+       send_string = "Hello\n"
+    elif cmd == "help":
+        send_string = help()
+    elif cmd == "blink":
+        send_string = blink(command_and_args, client_socket)
+    elif cmd == "light":
+        send_string = light_on_off(command_and_args)
+    elif cmd == "sleep":
+       send_string = go_to_sleep(command_and_args, client_socket)
+    elif cmd == "temp":
+        send_string = sense_temperature()
+    else:
+       send_string = "Command not recognized.\n"
+
+    client_socket.send( send_string.encode() )
+    return return_value
+
+
+
+def create_network_service(host='0.0.0.0', port=default_port):
+    server_running = True
+    global update_thread
+    
+    # Create a socket object
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    # Bind the socket to the host and port
+    server_socket.bind( (host, port) )
+
+    # Listen for incoming connections
+    server_socket.listen(5)
+    print(f"Server listening on {host}:{port}")
+
+    while server_running:
+        # Accept new connections
+        client_socket, address = server_socket.accept()
+        print(f"Connected to {address}")
+        client_socket.send( "Type 'help' to get a list of recognized commands.\n".encode() )
+
+        Reset_Everything()
+        _thread.start_new_thread(Update_Everything, ())
+        update_thread = True
+        
+        # Receive data from the client
+        keep_running = True
+        while keep_running:
+            client_socket.send( "Ready> ".encode() )
+            data = client_socket.recv(1024)
+            if data:
+               print(f"Received: {data.decode()}")
+               status = parse_incoming_command(data.decode(), client_socket)
+               keep_running = status
+            else:
+               keep_running = False
+
+        # Close the client socket
+        Reset_Everything()
+        client_socket.close()
+        
+
+
+def signal_handler(my_signal, temp):
+   sys.exit(0)
+
+
+def main():
+    # Catch signals to quit
+    # signal.signal(signal.SIGINT, signal_handler)
+
+    # Init pico
+    delay = 1
+    my_address = enable_networking(delay)
+    if my_address:
+       print("My IP address ", my_address)
+       led.value(1)
+       # Set up listening socket and parse commands
+       create_network_service(my_address, default_port)
+
+    else:
+       print("Unable to connect to network.")
+       led.value(0)
+
+    
+
+if __name__ == "__main__":
+   main()
+

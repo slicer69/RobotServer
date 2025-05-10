@@ -1,0 +1,6 @@
+hello
+echo This is a test command.
+sleep 2.0
+blink 6
+light off
+exit

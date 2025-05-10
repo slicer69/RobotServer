@@ -1,0 +1,17 @@
+#!/bin/bash
+
+if [ $# -lt 2 ]
+then
+   echo "Please provide the name of the remote server and a file to send."
+   echo "usage: $0 127.0.0.1 filename"
+   exit 1
+fi
+
+if [ ! -r $2 ]
+then
+  echo "File $2 not found."
+  exit 2
+fi
+
+nc -i 2 -q 2 "$1" 40801 < "$2"
+
