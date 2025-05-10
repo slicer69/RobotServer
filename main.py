@@ -53,7 +53,7 @@ def help():
    
    send_string += "Tasks the robot knows how to do:\n\n"
    send_string += "distance - distance to nearest object in cm\n"
-   send_string += "forward - move the buggy forward until it reaches a wall.\n"
+   send_string += "forward [steps] - move the buggy forward until it reaches a wall.\n"
    send_string += "halt - come to a complete stop\n"
    send_string += "honk - beep the horn\n"
    send_string += "lights <colour> - change the colour of the LED lights on the buggy\n"
@@ -252,14 +252,31 @@ def halt_buggy():
     return send_string
 
 
-def move_forward():
+def move_forward(command_line):
     global robot
-    status = robot.forward()
-    if status:
-        send_string = "Moving forward.\n"
+
+    if len(command_line) < 2:
+        status = robot.forward()
+        if status:
+            send_string = "Moving forward.\n"
+        else:
+            send_string = "Cannot move forward, something is in the way.\n"
     else:
-        send_string = "Cannot move forward, something is in the way.\n"
+       # We were told how far to move
+       if command_line[1].isnumeric():
+           steps = int(command_line[1])
+           status = robot.forward_steps(steps)
+           if status:
+              send_string = "Moved forward " + command_line[1] + " steps.\n"
+           else:
+              send_string = "Something is in the way, cannot move forward.\n"
+       else:
+           send_string = "I did not understand " + command_line[1] + " steps.\n"
+     
     return send_string
+
+
+
 
 def move_reverse():
     global robot
@@ -328,7 +345,7 @@ def parse_incoming_command(command, client_socket):
        send_string = "Good-bye\n"
        return_value = False
     elif cmd == "forward":
-        send_string = move_forward()
+        send_string = move_forward(command_and_args)
     elif cmd == "halt":
         send_string = halt_buggy()
     elif cmd == "hello":

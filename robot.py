@@ -16,6 +16,7 @@ import time
 # get_forward_distance - cm to anything in front of us
 # get_backward_distance - cm to anything behind us
 # forward - move forward at set speed until told to stop or we get too close to something
+# forward_steps - move forward a given number of feet (30 cm)
 # spin - spin in place to the left ("l") or right ("r")
 # turn - turn left or right a specified number of degrees
 
@@ -164,6 +165,24 @@ class Robot:
            return True
        else:    # we are too close to things in front, stop
           return False
+
+
+
+   # Nove forward approximately number_of_steps feet
+   # Return True if we moved or False if we cannot move.
+   def forward_steps(self, number_of_steps):
+      self.halt()
+     
+      if number_of_steps < 1 or number_of_steps > 10:
+         return False
+      time_to_wait = (100 / speed) * number_of_steps
+      time_to_wait /= 2.0
+      status = self.forward()
+      if (status):
+          time.sleep(time_to_wait)
+          self.halt()
+      return status
+
 
 
    def reverse(self):
