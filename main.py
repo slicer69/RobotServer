@@ -159,9 +159,10 @@ def light_on_off(command_line):
 def change_lights(command_line):
     global robot
     colour = robot.buggy.WHITE
-    
+
     if len(command_line) < 2:
         return_string = "Please provide the light colour, such as red, yellow, green, blue, or purple.\n"
+        return_string += "You can use on or auto to enable automatic lighting or off to disable lights.\n"
         return return_string
     if command_line[1] == "red":
         colour = robot.buggy.RED
@@ -175,12 +176,18 @@ def change_lights(command_line):
         colour = robot.buggy.PURPLE
     elif command_line[1] == "off":
         return_string = "Turning off buggy lights.\n"
+        robot.lights_auto = False
         robot.lights_off()
+        return return_string
+    elif command_line[1] == "auto" or command_line[1] == "on":
+        return_string = "Turning on buggy lights and settings to automatic.\n"
+        robot.lights_auto = True
         return return_string
     else:
         return_string = "I did not understand the colour " + command_line[1] + "\n"
         return return_string
     return_string = "Setting the lights to " + command_line[1] + "\n"
+    robot.lights_auto = False
     robot.set_lights([0,1,2,3], colour)
     return return_string
 

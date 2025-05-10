@@ -26,7 +26,6 @@ DEFAULT_SPEED = 50
 TOO_CLOSE = 30
 MIDDLE_DISTANCE = 60
 LIGHT_LEVEL = 15
-
  
 class Robot:
 
@@ -44,6 +43,7 @@ class Robot:
        self.direction = 0
        self.get_forward_distance()
        self.set_lights([0,1,2,3], self.buggy.GREEN)
+       self.lights_auto = True
        self.buggy.setBrightness(LIGHT_LEVEL)
        self.buggy.show()
        self.buggy.silence()
@@ -63,14 +63,17 @@ class Robot:
        # Logic is reversed to put sensor on rear
        self.forward_distance = self.buggy.getDistance("r")
        if self.forward_distance <= TOO_CLOSE and self.forward_distance > 1:
-           self.set_lights([0,1,2,3], self.buggy.RED)
+           if self.lights_auto:
+                self.set_lights([0,1,2,3], self.buggy.RED)
            # if we are moving forward, check for objects
            if self.left_motor > 0 and self.right_motor > 0:
                self.halt()
        elif self.forward_distance > TOO_CLOSE and self.forward_distance < MIDDLE_DISTANCE:
+           if self.lights_auto:
               self.set_lights([0,1,2,3], self.buggy.BLUE)
        else:
-          self.set_lights([0,1,2,3], self.buggy.GREEN)
+          if self.lights_auto:
+              self.set_lights([0,1,2,3], self.buggy.GREEN)
              
 
 
@@ -81,11 +84,11 @@ class Robot:
                
        self.buggy.show()
 
+
    def lights_off(self):
        for light in range(4):
            self.buggy.clear(light)
        self.buggy.show()
-       
        
        
    def get_direction(self):
