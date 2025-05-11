@@ -408,14 +408,14 @@ def create_network_service(host='0.0.0.0', port=default_port):
         # Accept new connections
         client_socket, address = server_socket.accept()
         print(f"Connected to {address}")
-        client_socket.send( "Type 'help' to get a list of recognized commands.\n".encode() )
+        client_socket.send( "Hello, I am Ron the robot!\nType 'help' to get a list of recognized commands.\n".encode() )
 
         Reset_Everything()
         
         # Receive data from the client
         keep_running = True
         while keep_running:
-            client_socket.send( "Ready> ".encode() )
+            client_socket.send( "Ron is ready> ".encode() )
             data = client_socket.recv(1024)
             if data:
                print(f"Received: {data.decode()}")
