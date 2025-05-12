@@ -238,11 +238,12 @@ def turn_buggy(command_line):
         send_string = "Please specify how many degrees to turn. Negative degrees for left.\n"
         return send_string
 
-    if not command_line[1].isnumeric():
+    try:
+        degrees = int(command_line[1])
+    except:
         send_string = "I did not understand " + command_line[1] + ". Please use a number.\n"
         return send_string
 
-    degrees = int(command_line[1])
     status = robot.turn(degrees)
     if status:
        send_string = "Turning buggy " + str(degrees) + ".\n"
@@ -265,21 +266,25 @@ def move_forward(command_line):
     if len(command_line) < 2:
         status = robot.forward()
         if status:
-            send_string = "Moving forward.\n"
+            send_string = "Moving forward one step.\n"
+            robot.forward_steps(1.0)
         else:
             send_string = "Cannot move forward, something is in the way.\n"
     else:
        # We were told how far to move
-       if command_line[1].isnumeric():
-           steps = int(command_line[1])
-           status = robot.forward_steps(steps)
-           if status:
-              send_string = "Moved forward " + command_line[1] + " steps.\n"
-           else:
-              send_string = "Something is in the way, cannot move forward.\n"
-       else:
+       steps = 1
+       try:
+           steps = float(command_line[1])
+       except:
            send_string = "I did not understand " + command_line[1] + " steps.\n"
-     
+           return send_string
+        
+       status = robot.forward_steps(steps)
+       if status:
+          send_string = "Moved forward " + command_line[1] + " steps.\n"
+       else:
+          send_string = "Something is in the way, cannot move forward.\n"
+           
     return send_string
 
 
@@ -330,6 +335,10 @@ def get_status():
     else:
         send_string += "forward\n"
     send_string += "Distance to nearest object: " + str(robot.forward_distance) + "cm\n"
+    if robot.lights_auto:
+        send_string += "Lights: managed automatically.\n"
+    else:
+        send_string += "Lights: managed manually.\n"
     return send_string
 
 

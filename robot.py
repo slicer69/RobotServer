@@ -155,7 +155,7 @@ class Robot:
        self.halt()
        # check there is nothing in front of us
        distance = self.forward_distance
-       if distance > TOO_CLOSE or distance < 0:
+       if distance > MIDDLE_DISTANCE or distance < 0:
            # Check if we need to engage throttle
            if self.speed <= 0:
               self.set_speed(DEFAULT_SPEED)
@@ -176,9 +176,13 @@ class Robot:
    def forward_steps(self, number_of_steps):
       self.halt()
      
-      if number_of_steps < 1 or number_of_steps > 10:
+      if number_of_steps < 0.5 or number_of_steps > 10.0:
          return False
-      time_to_wait = (100 / speed) * number_of_steps
+      
+      # Avoid divide by zero error
+      if self.speed <= 0:
+              self.set_speed(DEFAULT_SPEED)
+      time_to_wait = (100 / self.speed) * number_of_steps
       time_to_wait /= 2.0
       status = self.forward()
       if (status):
@@ -224,13 +228,15 @@ class Robot:
        if degrees > 359 or degrees < -359:
           return False
        # Estimated time it will take to turn us in a circle
-       degrees_per_second = 360
+       # The bot turns a little faster than 360 degrees per second.
+       # About 380-390 at default speed.
+       degrees_per_second = 360 * (6 / 5)
        degrees_to_turn = abs(degrees)
        sleep_time = degrees_to_turn / degrees_per_second
        if degrees < 0:
           self.spin("l")
        else:
-          self.spin('r")
+          self.spin("r")
        time.sleep(sleep_time)
        self.halt()
        return True
