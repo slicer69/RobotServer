@@ -57,11 +57,13 @@ def help():
    send_string += "halt - come to a complete stop\n"
    send_string += "honk - beep the horn\n"
    send_string += "lights <colour> - change the colour of the LED lights on the buggy\n"
+   send_string += "manual - Have the robot stop what it is doing and await instructions\n"
    send_string += "reverse - move the buggy backwards\n"
    send_string += "speed [new_speed] - get the current speed or set engines to a new speed\n"
    send_string += "spin <left/right> - spin the buggy in place\n"
    send_string += "status - get status report from the buggy\n"
    send_string += "turn <degrees> - turn the buggy left or right a number of degrees\n"
+   send_string += "wander - the robot will move about randomly. Do not leave unattended.\n"
    
    send_string += "\n"
    return send_string
@@ -255,7 +257,8 @@ def turn_buggy(command_line):
 
 def halt_buggy():
     global robot
-    robot.halt()
+    # Put us in manual mode, which also stops the buggy.
+    robot.enter_manual_mode()
     send_string = "Coming to a stop.\n"
     return send_string
 
@@ -264,15 +267,14 @@ def move_forward(command_line):
     global robot
 
     if len(command_line) < 2:
-        status = robot.forward()
+        status = robot.forward_steps(1.0)
         if status:
             send_string = "Moving forward one step.\n"
-            robot.forward_steps(1.0)
         else:
             send_string = "Cannot move forward, something is in the way.\n"
     else:
        # We were told how far to move
-       steps = 1
+       steps = 1.0
        try:
            steps = float(command_line[1])
        except:
@@ -290,13 +292,31 @@ def move_forward(command_line):
 
 
 
-def move_reverse():
+def move_reverse(command_line):
     global robot
-    status = robot.reverse()
-    if status:
-        send_string = "Moving in reverse.\n"
+    
+    if len(command_line) < 2:
+        status = robot.reverse_steps(1.0)
+        if status:
+            send_string = "Moving backware one step.\n"
+        else:
+            send_string = "Cannot move backward, something is in the way.\n"
+            
     else:
-        send_string = "Cannot move in reverse.\n"
+       # We were told how far to move
+       steps = 1.0
+       try:
+           steps = float(command_line[1])
+       except:
+           send_string = "I did not understand " + command_line[1] + " steps.\n"
+           return send_string
+        
+       status = robot.reverse_steps(steps)
+       if status:
+           send_string = "Moving in reverse.\n"
+       else:
+           send_string = "Cannot move in reverse.\n"
+        
     return send_string
 
 
@@ -314,6 +334,21 @@ def set_speed(command_line):
     robot.set_speed(new_speed)
     send_string = "Set new speed to " + str(new_speed) + "\n"
     return send_string
+
+
+
+def manual_mode():
+   global robot
+   robot.enter_manual_mode()
+   send_string = "Robot has stopped and is awaiting instructions.\n"
+   return send_string
+
+
+def wander_mode():
+   global robot
+   robot.enter_wander_mode()
+   send_string = "Robot is entering wander mode.\n"
+   return send_string
 
 
 def get_status():
@@ -339,6 +374,8 @@ def get_status():
         send_string += "Lights: managed automatically.\n"
     else:
         send_string += "Lights: managed manually.\n"
+    mode = robot.get_mode()
+    send_string += "Mode: " + mode + "\n"
     return send_string
 
 
@@ -377,8 +414,10 @@ def parse_incoming_command(command, client_socket):
         send_string = light_on_off(command_and_args)
     elif cmd == "lights":
         send_string = change_lights(command_and_args)
+    elif cmd == "manual":
+        send_string = manual_mode()
     elif cmd == "reverse":
-        send_string = move_reverse()
+        send_string = move_reverse(command_and_args)
     elif cmd == "sleep":
        send_string = go_to_sleep(command_and_args, client_socket)
     elif cmd == "speed":
@@ -391,6 +430,8 @@ def parse_incoming_command(command, client_socket):
         send_string = sense_temperature()
     elif cmd == "turn":
         send_string = turn_buggy(command_and_args)
+    elif cmd == "wander":
+        send_string = wander_mode()
     else:
        send_string = "Command not recognized.\n"
 
