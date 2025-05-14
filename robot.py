@@ -1,6 +1,6 @@
-import PicoAutonomousRobotics
 import random
 import time
+import PicoAutonomousRobotics
 
 # User facing functions
 # reset - reset the robot's position and direction to (0,0) and 0 degrees and turn off lights
@@ -16,8 +16,8 @@ import time
 # honk - beep the horn
 # get_forward_distance - cm to anything in front of us
 # get_backward_distance - cm to anything behind us
-# forward - move forward at set speed until told to stop or we get too close to something
 # forward_steps - move forward a given number of feet (30 cm)
+# reverse_steps - move backward a given number of feet (30 cm)
 # spin - spin in place to the left ("l") or right ("r")
 # turn - turn left or right a specified number of degrees
 
@@ -35,6 +35,7 @@ REVERSE_DIRECTION = "f"
 # Actions the robot can perform on its own. The default is manual.
 ACTION_MANUAL = 0
 ACTION_WANDER = 1
+ACTION_FOLLOW = 2
 
 
 class Robot:
@@ -69,8 +70,38 @@ class Robot:
 
 
 
+   def follow(self):
+      # This function is called about once a second from the update function.
+      # Try to follow objects in front of us.
+      # We know the update function just checked the distance in
+      # front of us. So wait about half a second, check to see if things
+      # are moving away. 
+      old_distance = self.forward_distance
+      time.sleep(0.5)
+      new_distance = self.get_forward_distance()
+
+      # If they are further away, move forward an amount
+      # proportional with the object's movement.
+      # Make sure distance is not an error/infinite
+      if new_distance >= 0 and old_distance >= 0:
+         if new_distance > old_distance:
+             delta_distance = new_distance - old_distance
+             # Put a cap on the max distance we will chase
+             if delta_distance > MIDDLE_DISTANCE:
+                 delta_distance = MIDDLE_DISTANCE
+             elif delta_distance < 1.5:
+                 # Only move if the distance change is significant
+                 return
+             # A reasonable amount of steps to move is probably distance / 50
+             steps = float(delta_distance / 50)
+             self.forward_steps(steps)
+      # If things are closer, do nothing.
+      # If nothing is moving, do nothing, for now
+
+
 
    def wander(self):
+      # This is called about once a second by the update function.
       # Move about, more or less randomly.
       new_action = random.randint(0, 3)
       if new_action == 0:
@@ -116,6 +147,8 @@ class Robot:
              
        if self.action == ACTION_WANDER:
            self.wander()
+       elif self.action == ACTION_FOLLOW:
+           self.follow()
 
 
 
@@ -186,8 +219,9 @@ class Robot:
    def get_mode(self):
        if self.action == ACTION_WANDER:
            return "Wander"
-       else:
-           return "Manual"
+       if self.action == ACTION_FOLLOW:
+           return "Follow"
+       return "Manual"
         
         
        
@@ -200,6 +234,11 @@ class Robot:
        self.halt()
        self.action = ACTION_WANDER
        
+
+   def enter_follow_mode(self):
+       self.halt()
+       self.action = ACTION_FOLLOW
+
 
    def get_forward_distance(self):
        # Logic is reversed to read sensor on rear
@@ -223,8 +262,8 @@ class Robot:
            self.buggy.motorOn("r", FORWARD_DIRECTION, self.speed)
            self.buggy.motorOn("l", FORWARD_DIRECTION, self.speed)
            return True
-       else:    # we are too close to things in front, stop
-          return False
+       # we are too close to things in front, stop
+       return False
 
 
 
@@ -242,7 +281,7 @@ class Robot:
       time_to_wait = (100 / self.speed) * number_of_steps
       time_to_wait /= 2.0
       status = self.forward()
-      if (status):
+      if status:
           time.sleep(time_to_wait)
           self.halt()
       return status
@@ -274,7 +313,7 @@ class Robot:
       time_to_wait = (100 / self.speed) * number_of_steps
       time_to_wait /= 2.0
       status = self.reverse()
-      if (status):
+      if status:
           time.sleep(time_to_wait)
           self.halt()
       return status

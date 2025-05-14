@@ -1,17 +1,17 @@
-import machine
-import network
 import socket
 import sys
-import _thread
 import time
+import machine
+import network
+import _thread
 from machine import Pin
 from robot import Robot
 
 
 # Network credentials
-default_port = 40801
-ssid = "Pineapple"
-password = "Winter2024"
+DEFAULT_PORT = 40801
+NETWORK_NAME = "Pineapple"
+NETWORK_PASSWORD = "Winter2024"
 
 # The Pico board's LED
 led = Pin("LED", Pin.OUT)
@@ -26,23 +26,23 @@ def enable_networking(wait_time):
   time.sleep(wait_time)
   wlan = network.WLAN(network.STA_IF)
   wlan.active(True)
-  wlan.connect(ssid, password)
+  wlan.connect(NETWORK_NAME, NETWORK_PASSWORD)
+      
   while wlan.status() != 3 and attempts < 10:
      time.sleep(1)
      attempts += 1
-
+  
   if wlan.status() == 3:
      address = wlan.ifconfig()
      return address[0]
-  else:
      
-     return False
+  return False
 
 
 
-def help():
+def display_help():
    send_string = "Tasks the Pico knows how to do:\n\n"
-   send_string += "blink [times] - toggle LED on/off <times> or enable/disable if not number specified\n"
+   send_string += "blink [times] - toggle LED <times> or enable/disable if no number specified\n"
    send_string += "echo [text] - repeats text back to client\n"
    send_string += "hello - say Hello to the client\n"
    send_string += "help - show this list of commands\n"
@@ -53,6 +53,7 @@ def help():
    
    send_string += "Tasks the robot knows how to do:\n\n"
    send_string += "distance - distance to nearest object in cm\n"
+   send_string += "follow - try to follow moving objects in front of the buggy.\n"
    send_string += "forward [steps] - move the buggy forward until it reaches a wall.\n"
    send_string += "halt - come to a complete stop\n"
    send_string += "honk - beep the horn\n"
@@ -163,8 +164,8 @@ def change_lights(command_line):
     colour = robot.buggy.WHITE
 
     if len(command_line) < 2:
-        return_string = "Please provide the light colour, such as red, yellow, green, blue, or purple.\n"
-        return_string += "You can use on or auto to enable automatic lighting or off to disable lights.\n"
+        return_string = "Please provide the light colour, such as red, green, or blue.\n"
+        return_string += "You can use on to enable auto lighting or off to disable lights.\n"
         return return_string
     if command_line[1] == "red":
         colour = robot.buggy.RED
@@ -337,6 +338,12 @@ def set_speed(command_line):
 
 
 
+def follow_mode():
+   global robot
+   robot.enter_follow_mode()
+   send_string = "Robot is entering Follow mode.\n"
+   return send_string
+
 def manual_mode():
    global robot
    robot.enter_manual_mode()
@@ -347,7 +354,7 @@ def manual_mode():
 def wander_mode():
    global robot
    robot.enter_wander_mode()
-   send_string = "Robot is entering wander mode.\n"
+   send_string = "Robot is entering Wander mode.\n"
    return send_string
 
 
@@ -397,6 +404,8 @@ def parse_incoming_command(command, client_socket):
     elif cmd == "exit":
        send_string = "Good-bye\n"
        return_value = False
+    elif cmd == "follow":
+        send_string = follow_mode()
     elif cmd == "forward":
         send_string = move_forward(command_and_args)
     elif cmd == "halt":
@@ -404,7 +413,7 @@ def parse_incoming_command(command, client_socket):
     elif cmd == "hello":
        send_string = "Hello\n"
     elif cmd == "help":
-        send_string = help()
+        send_string = display_help()
     elif cmd == "honk":
         robot.honk()
         send_string = "Beep beep\n"
@@ -440,15 +449,14 @@ def parse_incoming_command(command, client_socket):
 
 
 
-def create_network_service(host='0.0.0.0', port=default_port):
+def create_network_service(host='0.0.0.0', port=DEFAULT_PORT):
     server_running = True
+    socket_ready = False
     
     # Create a socket object
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-    # Bind the socket to the host and port
     server_socket.bind( (host, port) )
-
+                      
     # Listen for incoming connections
     server_socket.listen(5)
     print(f"Server listening on {host}:{port}")
@@ -458,7 +466,8 @@ def create_network_service(host='0.0.0.0', port=default_port):
         # Accept new connections
         client_socket, address = server_socket.accept()
         print(f"Connected to {address}")
-        client_socket.send( "Hello, I am Ron the robot!\nType 'help' to get a list of recognized commands.\n".encode() )
+        client_socket.send( "Hello, I am Ron the robot!\n".encode() )
+        client_socket.send( "Type 'help' to get a list of recognized commands.\n".encode() )
 
         Reset_Everything()
         
@@ -480,10 +489,6 @@ def create_network_service(host='0.0.0.0', port=default_port):
         
 
 
-def signal_handler(my_signal, temp):
-   sys.exit(0)
-
-
 def main():
     
     # Init pico
@@ -493,7 +498,7 @@ def main():
        print("My IP address ", my_address)
        led.value(1)
        # Set up listening socket and parse commands
-       create_network_service(my_address, default_port)
+       create_network_service(my_address, DEFAULT_PORT)
 
     else:
        print("Unable to connect to network.")
