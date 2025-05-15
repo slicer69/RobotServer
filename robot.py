@@ -1,3 +1,4 @@
+import math
 import random
 import time
 import PicoAutonomousRobotics
@@ -36,6 +37,8 @@ REVERSE_DIRECTION = "f"
 ACTION_MANUAL = 0
 ACTION_WANDER = 1
 ACTION_FOLLOW = 2
+ACTION_HOME = 3
+
 
 
 class Robot:
@@ -99,6 +102,49 @@ class Robot:
       # If nothing is moving, do nothing, for now
 
 
+   def home(self):
+       # Try to find our way back to our starting point (0, 0)
+       # get distance from home point
+       distance = math.sqrt( (self.x)**2 + (self.y)**2 )
+       distance = round(distance, 2)
+       # if close to home, stop moving
+       if distance < 1.0:
+           self.enter_manual_mode()
+           return
+        
+       # If necessary, turn toward home
+       target_direction = 0
+       # We are "in front" of home, turn back
+       if self.y > 0.0:
+           target_direction = 180
+       # We are left of home, turn right
+       if self.x < 0.0:
+           if target_direction == 0:
+               target_direction += 45
+           else:
+               target_direction -= 45
+       else:
+           # We are right of home, turn left
+           if target_direction == 0:
+               target_direction -= 45
+           else:
+               target_direction += 45
+               
+       # We know which way we want to go, compare that to our current course
+       delta_direction = round(target_direction - self.direction, 0)
+       if abs(delta_direction) > 20:
+           # We are off course, need to turn
+           self.turn(delta_direction)
+           return
+        
+       # Pointed in the right direction, move toward home
+       move_status = self.forward_steps(0.5)
+       if move_status:
+           return
+       # Something is in the way, wander for now, try to find home later.
+       self.wander()
+       
+       
 
    def wander(self):
       # This is called about once a second by the update function.
@@ -149,6 +195,8 @@ class Robot:
            self.wander()
        elif self.action == ACTION_FOLLOW:
            self.follow()
+       elif self.action == ACTION_HOME:
+           self.home()
 
 
 
@@ -218,13 +266,18 @@ class Robot:
 
    def get_mode(self):
        if self.action == ACTION_WANDER:
-           return "Wander"
+           return "Wandering"
        if self.action == ACTION_FOLLOW:
-           return "Follow"
+           return "Following"
+       if self.action == ACTION_HOME:
+           return "Returning Home"
        return "Manual"
         
         
-       
+   def enter_home_mode(self):
+       self.action = ACTION_HOME
+       self.halt()
+   
    def enter_manual_mode(self):
        self.action = ACTION_MANUAL
        self.halt()
@@ -284,6 +337,7 @@ class Robot:
       if status:
           time.sleep(time_to_wait)
           self.halt()
+          self.update_position(number_of_steps)
       return status
 
 
@@ -316,6 +370,7 @@ class Robot:
       if status:
           time.sleep(time_to_wait)
           self.halt()
+          self.update_position(number_of_steps)
       return status
 
 
@@ -345,6 +400,10 @@ class Robot:
        # The bot turns a little faster than 360 degrees per second.
        # About 380-390 at default speed.
        degrees_per_second = 360 * (6 / 5)
+
+       # Update which way we think we are pointing.
+       self.update_direction(degrees)
+
        degrees_to_turn = abs(degrees)
        sleep_time = degrees_to_turn / degrees_per_second
        if degrees < 0:
@@ -355,3 +414,26 @@ class Robot:
        self.halt()
        return True
 
+
+   # Figure out which way the buggy is pointing.
+   def update_direction(self, degrees):
+       self.direction += degrees
+       while self.direction < 0:
+          self.direction += 360
+       while self.direction > 360:
+          self.direction -= 360    
+
+
+   # Based on where we were, which way we are pointing
+   # and how fast we are going, try to determine where we
+   # are relative wot where we started.
+   def update_position(self, steps_taken):
+       # Convert direction from degrees to radians
+       rads = math.radians(self.direction)
+       # Calculate new position
+       new_y = self.y + steps_taken * math.cos(rads)
+       new_x = self.x + steps_taken * math.sin(rads)
+       self.x = round(new_x, 2)
+       self.y = round(new_y, 2)
+  
+      

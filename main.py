@@ -52,19 +52,24 @@ def display_help():
    send_string += "exit - disconnect client\n\n"
    
    send_string += "Tasks the robot knows how to do:\n\n"
+   send_string += "direction [degrees] - ask/tell the robot which way it is facing.\n"
    send_string += "distance - distance to nearest object in cm\n"
    send_string += "follow - try to follow moving objects in front of the buggy.\n"
-   send_string += "forward [steps] - move the buggy forward until it reaches a wall.\n"
+   send_string += "forward [steps] - move the buggy forward.\n"
    send_string += "halt - come to a complete stop\n"
+   send_string += "home - the robot will try to find its way back to where it started.\n"
    send_string += "honk - beep the horn\n"
    send_string += "lights <colour> - change the colour of the LED lights on the buggy\n"
    send_string += "manual - Have the robot stop what it is doing and await instructions\n"
-   send_string += "reverse - move the buggy backwards\n"
+   send_string += "position [x] [y] - Set the robots current (x,y) location.\n"
+   send_string += "reverse [steps] - move the buggy backwards\n"
    send_string += "speed [new_speed] - get the current speed or set engines to a new speed\n"
    send_string += "spin <left/right> - spin the buggy in place\n"
    send_string += "status - get status report from the buggy\n"
+   send_string += "step - [steps] - move the buggy forward.\n"
    send_string += "turn <degrees> - turn the buggy left or right a number of degrees\n"
    send_string += "wander - the robot will move about randomly. Do not leave unattended.\n"
+   send_string += "where - have the robot report on its position and direction\n"
    
    send_string += "\n"
    return send_string
@@ -125,7 +130,29 @@ def blink(command_line, socket):
             
     return send_string
 
- 
+
+
+def set_direction(command_line):
+    global robot
+    if len(command_line) < 2:
+        # ask the robot what direction it is facing
+        current_dir = robot.get_direction()
+        send_string = "Facing " + str(current_dir) + " degrees.\n"
+        return send_string
+    # Try to set new direction
+    try:
+        new_dir = int(command_line[1])
+        if new_dir < 0 or new_dir > 359:
+            send_string = "Please specify a direction in the range of 0 to 359.\n"
+            return send_string
+    except:
+        send_string = "Unable to convert " + command_line[1] + " to degrees.\n"
+        return send_string
+    robot.set_direction(new_dir)
+    send_string = "Robot now facing " + command_line[1] + " degrees.\n"
+    return send_string
+
+
 
 def go_to_sleep(command_line, socket):
     sleep_time = 1.0
@@ -344,6 +371,14 @@ def follow_mode():
    send_string = "Robot is entering Follow mode.\n"
    return send_string
 
+
+def home_mode():
+    global robot
+    robot.enter_home_mode()
+    send_string = "Robot is entering Home mode.\n"
+    return send_string
+
+
 def manual_mode():
    global robot
    robot.enter_manual_mode()
@@ -356,6 +391,25 @@ def wander_mode():
    robot.enter_wander_mode()
    send_string = "Robot is entering Wander mode.\n"
    return send_string
+
+
+def set_position(command_line):
+    global robot
+    
+    if len(command_line) < 3:
+        send_string = "Please provide two coordinates. For example: position 1.5 -2.3\n"
+        return send_string
+    try:
+        x = float(command_line[1])
+        y = float(command_line[2])
+    except:
+        send_string = "Did not understand " + command_line[1] + " " + command_line[2] + "\n"
+        return send_string
+    x = round(x, 1)
+    y = round(y, 1)
+    robot.set_coordinates(x, y)
+    send_string = "Set new position to (" + str(x) + ", " + str(y) + ")\n"
+    return send_string
 
 
 def get_status():
@@ -383,7 +437,18 @@ def get_status():
         send_string += "Lights: managed manually.\n"
     mode = robot.get_mode()
     send_string += "Mode: " + mode + "\n"
+    send_string += where_report()
     return send_string
+
+
+
+def where_report():
+   global robot
+   x_and_y = robot.get_coordinates()
+   direction = robot.get_direction()
+   return_string = "Direction: " + str(direction) + "\n"
+   return_string += "Position: " + str(x_and_y) + "\n"
+   return return_string
 
 
 def parse_incoming_command(command, client_socket):
@@ -397,6 +462,8 @@ def parse_incoming_command(command, client_socket):
 
     if args_length < 1:
        send_string = "Nothing received\n"
+    elif cmd == "direction":
+        send_string = set_direction(command_and_args)
     elif cmd == "distance":
         send_string = get_distance()
     elif cmd == "echo":
@@ -414,6 +481,8 @@ def parse_incoming_command(command, client_socket):
        send_string = "Hello\n"
     elif cmd == "help":
         send_string = display_help()
+    elif cmd == "home":
+        send_string = home_mode()
     elif cmd == "honk":
         robot.honk()
         send_string = "Beep beep\n"
@@ -425,6 +494,8 @@ def parse_incoming_command(command, client_socket):
         send_string = change_lights(command_and_args)
     elif cmd == "manual":
         send_string = manual_mode()
+    elif cmd == "position":
+        send_string = set_position(command_and_args)
     elif cmd == "reverse":
         send_string = move_reverse(command_and_args)
     elif cmd == "sleep":
@@ -435,12 +506,16 @@ def parse_incoming_command(command, client_socket):
         send_string = spin_buggy(command_and_args)
     elif cmd == "status":
         send_string = get_status()
+    elif cmd == "step":
+        send_string = move_forward(command_and_args)
     elif cmd == "temp":
         send_string = sense_temperature()
     elif cmd == "turn":
         send_string = turn_buggy(command_and_args)
     elif cmd == "wander":
         send_string = wander_mode()
+    elif cmd == "where":
+        send_string = where_report()
     else:
        send_string = "Command not recognized.\n"
 
@@ -451,7 +526,6 @@ def parse_incoming_command(command, client_socket):
 
 def create_network_service(host='0.0.0.0', port=DEFAULT_PORT):
     server_running = True
-    socket_ready = False
     
     # Create a socket object
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
