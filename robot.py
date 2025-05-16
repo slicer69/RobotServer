@@ -30,8 +30,11 @@ MIDDLE_DISTANCE = 60
 LIGHT_LEVEL = 15
 
 # Constants used to make it possible to reverse motor logic
-FORWARD_DIRECTION = "r"
-REVERSE_DIRECTION = "f"
+FORWARD_DIRECTION = "f"
+REVERSE_DIRECTION = "r"
+
+LEFT_MOTOR_ADJUST = 1.15
+RIGHT_MOTOR_ADJUST = 1.0
 
 # Actions the robot can perform on its own. The default is manual.
 ACTION_MANUAL = 0
@@ -56,6 +59,7 @@ class Robot:
        self.y = 0
        self.direction = 0
        self.get_forward_distance()
+       self.get_reverse_distance()
        self.set_lights([0,1,2,3], self.buggy.GREEN)
        self.lights_auto = True
        self.buggy.setBrightness(LIGHT_LEVEL)
@@ -80,7 +84,7 @@ class Robot:
       # front of us. So wait about half a second, check to see if things
       # are moving away. 
       old_distance = self.forward_distance
-      time.sleep(0.5)
+      time.sleep(0.3)
       new_distance = self.get_forward_distance()
 
       # If they are further away, move forward an amount
@@ -92,11 +96,11 @@ class Robot:
              # Put a cap on the max distance we will chase
              if delta_distance > MIDDLE_DISTANCE:
                  delta_distance = MIDDLE_DISTANCE
-             elif delta_distance < 1.5:
+             elif delta_distance < 1.0:
                  # Only move if the distance change is significant
                  return
              # A reasonable amount of steps to move is probably distance / 50
-             steps = float(delta_distance / 50)
+             steps = float(delta_distance / 20)
              self.forward_steps(steps)
       # If things are closer, do nothing.
       # If nothing is moving, do nothing, for now
@@ -108,7 +112,7 @@ class Robot:
        distance = math.sqrt( (self.x)**2 + (self.y)**2 )
        distance = round(distance, 2)
        # if close to home, stop moving
-       if distance < 1.0:
+       if distance < 0.5:
            self.enter_manual_mode()
            return
         
@@ -177,16 +181,24 @@ class Robot:
 
 
    def update(self):
-       self.forward_distance = self.buggy.getDistance(FORWARD_DIRECTION)
-       if self.forward_distance <= TOO_CLOSE and self.forward_distance > 1:
+       front_distance = self.buggy.getDistance(FORWARD_DIRECTION)
+       rear_distance = self.buggy.getDistance(REVERSE_DIRECTION)
+       if front_distance <= TOO_CLOSE and front_distance > 1:
            if self.lights_auto:
                 self.set_lights([0,1,2,3], self.buggy.RED)
            # if we are moving forward, check for objects
            if self.left_motor > 0 and self.right_motor > 0:
                self.halt()
-       elif self.forward_distance > TOO_CLOSE and self.forward_distance < MIDDLE_DISTANCE:
+       elif rear_distance <= TOO_CLOSE and rear_distance > 1:
+           if self.lights_auto:
+                self.set_lights([0,1,2,3], self.buggy.RED)
+                
+       elif front_distance > TOO_CLOSE and front_distance < MIDDLE_DISTANCE:
            if self.lights_auto:
               self.set_lights([0,1,2,3], self.buggy.BLUE)
+       elif rear_distance > TOO_CLOSE and rear_distance < MIDDLE_DISTANCE:
+           if self.lights_auto:
+               self.set_lights([0,1,2,3], self.buggy.BLUE)
        else:
           if self.lights_auto:
               self.set_lights([0,1,2,3], self.buggy.GREEN)
@@ -245,15 +257,15 @@ class Robot:
            self.speed = new_speed
            # if motors are running, engage them at new speed
            if self.left_motor < 0:
-               self.buggy.motorOn("l", REVERSE_DIRECTION, self.speed)
+               self.buggy.motorOn("l", REVERSE_DIRECTION, self.speed * LEFT_MOTOR_ADJUST)
            elif self.left_motor > 0:
-               self.buggy.motorOn("l", FORWARD_DIRECTION, self.speed)
+               self.buggy.motorOn("l", FORWARD_DIRECTION, self.speed * LEFT_MOTOR_ADJUST)
            else:
                self.buggy.motorOff("l")
            if self.right_motor < 0:
-               self.buggy.motorOn("r", REVERSE_DIRECTION, self.speed)
+               self.buggy.motorOn("r", REVERSE_DIRECTION, self.speed * RIGHT_MOTOR_ADJUST)
            elif self.left_motor > 0:
-               self.buggy.motorOn("r", FORWARD_DIRECTION, self.speed)
+               self.buggy.motorOn("r", FORWARD_DIRECTION, self.speed * RIGHT_MOTOR_ADJUST)
            else:
                self.buggy.motorOff("r")
            return True
@@ -294,11 +306,11 @@ class Robot:
 
 
    def get_forward_distance(self):
-       # Logic is reversed to read sensor on rear
        self.forward_distance = self.buggy.getDistance(FORWARD_DIRECTION)
        return self.forward_distance
 
-
+   def get_reverse_distance(self):
+       self.reverse_distance = self.buggy.getDistance(REVERSE_DIRECTION)
 
 
    def forward(self):
@@ -312,8 +324,8 @@ class Robot:
            self.left_motor = 1
            self.right_motor = 1
            # Logic is reversed to handle broken motor
-           self.buggy.motorOn("r", FORWARD_DIRECTION, self.speed)
-           self.buggy.motorOn("l", FORWARD_DIRECTION, self.speed)
+           self.buggy.motorOn("r", FORWARD_DIRECTION, self.speed * RIGHT_MOTOR_ADJUST)
+           self.buggy.motorOn("l", FORWARD_DIRECTION, self.speed * LEFT_MOTOR_ADJUST)
            return True
        # we are too close to things in front, stop
        return False
@@ -343,15 +355,18 @@ class Robot:
 
 
    def reverse(self):
-       if self.speed <= 0:
-           self.set_speed(DEFAULT_SPEED)
+       distance = self.reverse_distance
+       if distance > MIDDLE_DISTANCE or distance < 0:
+           if self.speed <= 0:
+               self.set_speed(DEFAULT_SPEED)
        
-       self.left_motor = -1
-       self.right_motor = -1
-       self.buggy.motorOn("r", REVERSE_DIRECTION, self.speed)
-       self.buggy.motorOn("l", REVERSE_DIRECTION, self.speed)
-       return True
-   
+           self.left_motor = -1
+           self.right_motor = -1
+           self.buggy.motorOn("r", REVERSE_DIRECTION, self.speed * RIGHT_MOTOR_ADJUST)
+           self.buggy.motorOn("l", REVERSE_DIRECTION, self.speed * LEFT_MOTOR_ADJUST)
+           return True
+       # Not enough room to back up, refuse. 
+       return False
    
    # Nove backward approximately number_of_steps feet
    # Return True if we moved or False if we cannot move.
@@ -383,9 +398,9 @@ class Robot:
            self.set_speed(DEFAULT_SPEED) 
 
        if left_right == "r":   # spin right
-          self.buggy.motorOn("r", FORWARD_DIRECTION, self.speed)
+          self.buggy.motorOn("l", FORWARD_DIRECTION, self.speed * LEFT_MOTOR_ADJUST)
        else:    # spin left
-          self.buggy.motorOn("l", FORWARD_DIRECTION, self.speed)
+          self.buggy.motorOn("r", FORWARD_DIRECTION, self.speed * RIGHT_MOTOR_ADJUST)
 
 
    # Work out how long it will take us to turn
