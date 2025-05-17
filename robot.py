@@ -41,7 +41,11 @@ ACTION_MANUAL = 0
 ACTION_WANDER = 1
 ACTION_FOLLOW = 2
 ACTION_HOME = 3
+ACTION_LINE_BLACK = 4
+ACTION_LINE_WHITE = 5
 
+LIGHT_BARRIER = 35000
+FOLLOW_LINE_STEP = 0.3
 
 
 class Robot:
@@ -66,6 +70,7 @@ class Robot:
        self.buggy.show()
        self.buggy.silence()
        self.speed = 0
+       self.light_barrier = LIGHT_BARRIER
        self.action = ACTION_MANUAL
      
 
@@ -99,11 +104,48 @@ class Robot:
              elif delta_distance < 1.0:
                  # Only move if the distance change is significant
                  return
-             # A reasonable amount of steps to move is probably distance / 50
-             steps = float(delta_distance / 20)
+             # A reasonable amount of steps to move is probably about half a foot
+             steps = 0.3
              self.forward_steps(steps)
       # If things are closer, do nothing.
       # If nothing is moving, do nothing, for now
+
+
+   def follow_line(self):
+      # Try to follow a line on the floor.
+      left_eye = self.buggy.getRawLFValue("l")
+      centre_eye = self.buggy.getRawLFValue("c")
+      right_eye = self.buggy.getRawLFValue("r")
+    
+      on_line = False
+      # Black should be a high value, around 30,000 or higher
+      # White should be low, below 25,000
+      if self.action == ACTION_LINE_BLACK and centre_eye > self.light_barrier:
+          on_line = True
+      elif self.action == ACTION_LINE_WHITE and centre_eye <= self.light_barrier:
+          on_line = True
+
+      # We are on the line, move forward a little
+      if on_line:
+          self.forward_steps(FOLLOW_LINE_STEP)
+      else:
+          # We are off the line, check to see if we can find it to the left or right
+          # If black, follow higher value senor
+          if self.action == ACTION_LINE_BLACK:
+             if left_eye > right_eye and left_eye > centre_eye:
+                 self.turn(-20)
+             elif left_eye < right_eye and left_eye < centre_eye:
+                 self.turn(20)
+             else:
+                 self.forward_steps(FOLLOW_LINE_STEP)
+   
+          elif self.action == ACTION_LINE_WHITE:
+             if left_eye < right_eye and left_eye < centre_eye:
+                 self.turn(-20)
+             elif left_eye > right_eye and left_eye > centre_eye:
+                 self.turn(20)
+             else:
+                 self.forward_steps(FOLLOW_LINE_STEP)
 
 
    def home(self):
@@ -163,14 +205,17 @@ class Robot:
           degrees = random.randint(60, 90)
           self.turn(degrees)
       else:
+          if self.forward_distance < TOO_CLOSE and self.reverse_distance > TOO_CLOSE:
+              # Something in the way, attempt to reverse
+              self.reverse_steps(0.3)
           # try to move forward
           # There is space for us to move forward
-          if self.forward_distance > MIDDLE_DISTANCE:
-              move_steps = random.randint(3, 6)
+          elif self.forward_distance > MIDDLE_DISTANCE:
+              move_steps = random.randint(4, 6)
               move_steps = float(move_steps / 10)
-              self.forward_steps(0.5)
+              self.forward_steps(move_steps)
           else:
-              # We do not have space to move forward, try turning left or right
+              # We do not have space to move forward or backward, try turning left or right
               turn = random.randint(0, 1)
               degrees = random.randint(60, 90)
               if turn == 0:
@@ -182,7 +227,9 @@ class Robot:
 
    def update(self):
        front_distance = self.buggy.getDistance(FORWARD_DIRECTION)
+       self.forward_distance = front_distance
        rear_distance = self.buggy.getDistance(REVERSE_DIRECTION)
+       self.reverse_distance = rear_distance
        if front_distance <= TOO_CLOSE and front_distance > 1:
            if self.lights_auto:
                 self.set_lights([0,1,2,3], self.buggy.RED)
@@ -209,7 +256,8 @@ class Robot:
            self.follow()
        elif self.action == ACTION_HOME:
            self.home()
-
+       elif self.action == ACTION_LINE_BLACK or self.action == ACTION_LINE_WHITE:
+           self.follow_line()
 
 
    def set_lights(self, light_array, colour):
@@ -272,6 +320,14 @@ class Robot:
       return False
 
 
+   def set_light_barrier_level(self, new_barrier):
+       if new_barrier >= 0 and new_barrier <= 65000:
+           self.light_barrier = new_barrier
+           
+   def get_light_barrier_level(self):
+       return self.light_barrier
+    
+
    def honk(self):
       self.buggy.beepHorn()
 
@@ -283,6 +339,10 @@ class Robot:
            return "Following"
        if self.action == ACTION_HOME:
            return "Returning Home"
+       if self.action == ACTION_LINE_WHITE:
+           return "Following white line"
+       if self.action == ACTION_LINE_BLACK:
+           return "Following black line"
        return "Manual"
         
         
@@ -290,6 +350,15 @@ class Robot:
        self.action = ACTION_HOME
        self.halt()
    
+
+   def enter_line_follow_mode(self, colour):
+       if colour == "white":
+           self.action = ACTION_LINE_WHITE
+       else:
+           self.action = ACTION_LINE_BLACK
+       self.halt()
+
+
    def enter_manual_mode(self):
        self.action = ACTION_MANUAL
        self.halt()
@@ -311,6 +380,7 @@ class Robot:
 
    def get_reverse_distance(self):
        self.reverse_distance = self.buggy.getDistance(REVERSE_DIRECTION)
+       return self.reverse_distance
 
 
    def forward(self):

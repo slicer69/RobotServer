@@ -60,9 +60,11 @@ def display_help():
    send_string += "home - the robot will try to find its way back to where it started.\n"
    send_string += "honk - beep the horn\n"
    send_string += "lights <colour> - change the colour of the LED lights on the buggy\n"
+   send_string += "line [black/white] - follow a line on the floor. Defaults to black.\n"
    send_string += "manual - Have the robot stop what it is doing and await instructions\n"
    send_string += "position [x] [y] - Set the robots current (x,y) location.\n"
    send_string += "reverse [steps] - move the buggy backwards\n"
+   send_string += "sensors [barrier]- report the light levels detected. Set light/dark barrier.\n"
    send_string += "speed [new_speed] - get the current speed or set engines to a new speed\n"
    send_string += "spin <left/right> - spin the buggy in place\n"
    send_string += "status - get status report from the buggy\n"
@@ -185,6 +187,17 @@ def light_on_off(command_line):
    return return_string
 
 
+def follow_line(command_line):
+   global robot
+   line_colour = "black"
+   if len(command_line) >= 2:
+      if command_line[1] == "white":
+          line_colour = "white"
+
+   robot.enter_line_follow_mode(line_colour)
+   return_string = "Now following any " + line_colour + " line I can find.\n"
+   return return_string
+
 
 def change_lights(command_line):
     global robot
@@ -243,8 +256,10 @@ def sense_temperature():
 
 def get_distance():
     global robot
-    distance_in_cm = robot.get_forward_distance()
-    send_string = "Distance to nearest object is " + str(distance_in_cm) + ".\n"
+    distance_in_cm = robot.forward_distance
+    send_string = "Distance to nearest object in front is " + str(distance_in_cm) + ".\n"
+    distance_in_cm = robot.reverse_distance
+    send_string += "Distance to nearest object behind is " + str(distance_in_cm) + ".\n"
     return send_string
 
 
@@ -430,7 +445,9 @@ def get_status():
         send_string += "reverse\n"
     else:
         send_string += "forward\n"
-    send_string += "Distance to nearest object: " + str(robot.forward_distance) + "cm\n"
+    send_string += "Distance to nearest forward object: " + str(robot.forward_distance) + "cm\n"
+    send_string += "Distance to nearest rear object: " + str(robot.reverse_distance) + "cm\n"
+    send_string += light_sensors([0])
     if robot.lights_auto:
         send_string += "Lights: managed automatically.\n"
     else:
@@ -449,6 +466,31 @@ def where_report():
    return_string = "Direction: " + str(direction) + "\n"
    return_string += "Position: " + str(x_and_y) + "\n"
    return return_string
+
+
+
+def light_sensors(command_line):
+    global robot
+    
+    if len(command_line) >= 2:
+        try:
+            new_level = int(command_line[1])
+            robot.set_light_barrier_level(new_level)
+            send_string = "Set new light level to: " + command_line[1] + "\n"
+            return send_string
+        except:
+            send_string = "Unable to set light level barrier to " + command_line[1] + "\n"
+            send_string += "Please provide a value in the range of 0 to 65000.\n"
+            return send_string
+        
+    left_eye = robot.buggy.getRawLFValue("l")
+    right_eye = robot.buggy.getRawLFValue("r")
+    centre_eye = robot.buggy.getRawLFValue("c")
+    send_string = "Light levels: Left (" + str(left_eye) + ") "
+    send_string += "Centre (" + str(centre_eye) + ") "
+    send_string += "Right (" + str(right_eye) + ")\n"
+    send_string += "Light barrier between light and dark: " + str(robot.light_barrier) + "\n"
+    return send_string
 
 
 def parse_incoming_command(command, client_socket):
@@ -492,12 +534,16 @@ def parse_incoming_command(command, client_socket):
         send_string = light_on_off(command_and_args)
     elif cmd == "lights":
         send_string = change_lights(command_and_args)
+    elif cmd == "line":
+        send_string = follow_line(command_and_args)
     elif cmd == "manual":
         send_string = manual_mode()
     elif cmd == "position":
         send_string = set_position(command_and_args)
     elif cmd == "reverse":
         send_string = move_reverse(command_and_args)
+    elif cmd == "sensors":
+        send_string = light_sensors(command_and_args)
     elif cmd == "sleep":
        send_string = go_to_sleep(command_and_args, client_socket)
     elif cmd == "speed":
