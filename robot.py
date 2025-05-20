@@ -36,6 +36,9 @@ REVERSE_DIRECTION = "r"
 LEFT_MOTOR_ADJUST = 1.15
 RIGHT_MOTOR_ADJUST = 1.0
 
+RIGHT_TURN_MODIFIER = 0.90
+LEFT_TURN_MODIFIER = 0.80
+
 # Actions the robot can perform on its own. The default is manual.
 ACTION_MANUAL = 0
 ACTION_WANDER = 1
@@ -486,9 +489,9 @@ class Robot:
        if degrees > 359 or degrees < -359:
           return False
        # Estimated time it will take to turn us in a circle
-       # The bot turns a little faster than 360 degrees per second.
-       # About 380-390 at default speed.
-       degrees_per_second = 360 * (6 / 5)
+       # The bot turns a little slower than 360 degrees per second.
+       # About 270 at default speed.
+       degrees_per_second = 270
 
        # Update which way we think we are pointing.
        self.update_direction(degrees)
@@ -497,8 +500,10 @@ class Robot:
        sleep_time = degrees_to_turn / degrees_per_second
        if degrees < 0:
           self.spin("l")
+          sleep_time *= LEFT_TURN_MODIFIER
        else:
           self.spin("r")
+          sleep_time *= RIGHT_TURN_MODIFIER
        time.sleep(sleep_time)
        self.halt()
        return True
