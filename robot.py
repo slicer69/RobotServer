@@ -45,8 +45,8 @@ ACTION_LINE_BLACK = 4
 ACTION_LINE_WHITE = 5
 
 LIGHT_BARRIER = 35000
-FOLLOW_LINE_STEP = 0.3
-
+FOLLOW_LINE_STEP = 0.2
+WANDER_STEP = 0.3
 
 class Robot:
 
@@ -207,7 +207,7 @@ class Robot:
       else:
           if self.forward_distance < TOO_CLOSE and self.reverse_distance > TOO_CLOSE:
               # Something in the way, attempt to reverse
-              self.reverse_steps(0.3)
+              self.reverse_steps(WANDER_STEP)
           # try to move forward
           # There is space for us to move forward
           elif self.forward_distance > MIDDLE_DISTANCE:
@@ -407,9 +407,11 @@ class Robot:
    def forward_steps(self, number_of_steps):
       self.halt()
      
-      if number_of_steps < 0.3 or number_of_steps > 10.0:
+      if number_of_steps > 10.0:
          return False
-      
+      if number_of_steps < 0.1:
+          number_of_steps = FOLLOW_LINE_STEP
+          
       # Avoid divide by zero error
       if self.speed <= 0:
               self.set_speed(DEFAULT_SPEED)
@@ -443,8 +445,10 @@ class Robot:
    def reverse_steps(self, number_of_steps):
       self.halt()
      
-      if number_of_steps < 0.3 or number_of_steps > 10.0:
+      if number_of_steps > 10.0:
          return False
+      if number_of_steps < 0.1:
+          number_of_steps = FOLLOW_LINE_STEP
       
       # Avoid divide by zero error
       if self.speed <= 0:

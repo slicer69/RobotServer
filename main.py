@@ -265,6 +265,8 @@ def get_distance():
 
 def spin_buggy(command_line):
     global robot
+    
+    robot.enter_manual_mode()
     direction = "r"
     send_string = "Spinning buggy to the right.\n" 
     
@@ -279,6 +281,8 @@ def spin_buggy(command_line):
 
 def turn_buggy(command_line):
     global robot
+    
+    robot.enter_manual_mode()
     if len(command_line) < 2:
         send_string = "Please specify how many degrees to turn. Negative degrees for left.\n"
         return send_string
@@ -309,6 +313,7 @@ def halt_buggy():
 def move_forward(command_line):
     global robot
 
+    robot.enter_manual_mode()
     if len(command_line) < 2:
         status = robot.forward_steps(1.0)
         if status:
@@ -338,6 +343,7 @@ def move_forward(command_line):
 def move_reverse(command_line):
     global robot
     
+    robot.enter_manual_mode()
     if len(command_line) < 2:
         status = robot.reverse_steps(1.0)
         if status:
