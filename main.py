@@ -10,6 +10,7 @@ from robot import Robot
 
 # Network credentials
 DEFAULT_PORT = 40801
+# Replace the values here with your own network login information.
 NETWORK_NAME = "Pineapple"
 NETWORK_PASSWORD = "Winter2024"
 

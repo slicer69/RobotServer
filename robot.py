@@ -24,20 +24,38 @@ import PicoAutonomousRobotics
 
 
 # Constants
+# How much power to send to the engine (as a percent).
+# Usually 50 is good on wood floors. Carpet might require 75.
+# Can be adjusted by the user when connected remotely
 DEFAULT_SPEED = 50
+
+# How close (in cm) do we get before we should stop?
 TOO_CLOSE = 30
 MIDDLE_DISTANCE = 60
+
+# How bright should the lights be? 0-100 
 LIGHT_LEVEL = 15
 
 # Constants used to make it possible to reverse motor logic
 FORWARD_DIRECTION = "f"
 REVERSE_DIRECTION = "r"
 
+# Sometimes the motors have different strengths. With
+# 1.0 being "normal", this allows us to apply more or
+# less power to the left or right motor to balance them.
+# My left motor is about 15% weaker, so gets a 0.15 boost.
 LEFT_MOTOR_ADJUST = 1.15
 RIGHT_MOTOR_ADJUST = 1.0
 
+# Adjust how much time we need to apply power to turn the buggy.
+# Ideally, it should be 1.0, but if an engine is stronger or weaker
+# we can adjust this. Smaller numbers make the turn angle smaller,
+# larger numbers increase the turn.
 RIGHT_TURN_MODIFIER = 0.90
 LEFT_TURN_MODIFIER = 0.80
+
+# From here on, do not change variables unless you need to make
+# big changes to behaviour/logic.
 
 # Actions the robot can perform on its own. The default is manual.
 ACTION_MANUAL = 0
