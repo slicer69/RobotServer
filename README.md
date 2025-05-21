@@ -13,8 +13,8 @@ This repository contains the following files and functioanlity:
 
 This file contains the networking components and chat server for the Pico-powered robot. This file
 must be installed on the Pico with the fielname "main.py" so that it runs when the Pico powers on.
-This program connects to a local network using the credentials stored in the variables "ssid" and
-"password", which are located near the top of the main.py file.
+This program connects to a local network using the credentials stored in the variables "NETWORK_NAME" and
+"NETWORK_PASSWORD", which are located near the top of the main.py file. These variables can be changed to suit your network.
 
 Once connected to the network this program waits for a network connection from a plain-text client,
 such as telnet or nc. It then processes commands sent to it. The client can send the command "help"
@@ -41,6 +41,16 @@ robot buggy. It handles managing the hardware - changing the light colour, detec
 objects, turning on/off the motors. The user does not interact directly with the robot.py code
 (user interaction is handled by main.py), but this is the middle layer between the user and
 the PicoAutonomousRobotics.py library which controls the robot's hardware.
+
+There are some variables in the robot.py file, near the top, which can be altered to
+fine-tune the robot's behaviour. DEFAULT_SPEED sets the robot's initial throttle, for
+example in the range of 0-100. The LEFT_MOTOR_ADJUST and RIGHT_MOTOR_ADJUST can be
+used to fine-tune robot movement when one motor is more powerful than the other. In these
+cases the robot tends to slowly turn when trying to drive in a straight line. Changing
+these variables higher gives the lagging engine more power.
+
+The LIGHT_LEVEL variable adjusts how bright the LED lights are. This value is in the
+range of 0-100.
 
 
 ## send-batch
