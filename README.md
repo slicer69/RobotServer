@@ -72,6 +72,8 @@ calls the robot back to its starting point (home). The two trigger buttons tell 
 robot to stop/halt. The connection can be dropped by pressing + or -. A list of
 commands is displayed in the terminal.
 
+The remote.py program requires the pygame Python module which can usually be installed
+from your distribution's repositories.
 
 
 ## send-batch
