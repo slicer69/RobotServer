@@ -20,6 +20,10 @@ Once connected to the network this program waits for a network connection from a
 such as telnet or nc. It then processes commands sent to it. The client can send the command "help"
 to see a list of all supported commands.
 
+By default, the Pico W registers itself on the local network with the hostname "picow"
+and listens on network port 40801. Connecting to it is usually as easy as running
+"telnet picow 40801".
+
 Commands are parsed and then, as appropriate, sent to the Robot class to manipulate the Kitronik
 robot.
 
@@ -51,6 +55,23 @@ these variables higher gives the lagging engine more power.
 
 The LIGHT_LEVEL variable adjusts how bright the LED lights are. This value is in the
 range of 0-100.
+
+
+## remote.py
+
+This program allows the Kitronik robot to be remotely piloted using a Nintendo Switch
+pro controller. The program tried to connect to the robot over the wi-fi network,
+looking for the hostname "picow" and the network port 40801.
+
+When a connection is made the Nintendo controller can be used to send navigation commands
+to the robot. The two axis sticks turn the robot and drive it forward or backward.
+The A, B, Y, and X buttons change the colour of the robot's lights.
+
+The left button (L) puts the robot into automated Wander mode while the right button (R)
+calls the robot back to its starting point (home). The two trigger buttons tell the
+robot to stop/halt. The connection can be dropped by pressing + or -. A list of
+commands is displayed in the terminal.
+
 
 
 ## send-batch
