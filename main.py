@@ -53,6 +53,7 @@ def display_help():
    send_string += "exit - disconnect client\n\n"
    
    send_string += "Tasks the robot knows how to do:\n\n"
+   send_string += "avoid - try to move away from nearby objects.\n"
    send_string += "direction [degrees] - ask/tell the robot which way it is facing.\n"
    send_string += "distance - distance to nearest object in cm\n"
    send_string += "follow - try to follow moving objects in front of the buggy.\n"
@@ -387,6 +388,14 @@ def set_speed(command_line):
 
 
 
+
+def avoid_mode():
+   global robot
+   robot.enter_avoid_mode()
+   send_string = "Robot is entering Avoid mode.\n"
+   return send_string
+
+
 def follow_mode():
    global robot
    robot.enter_follow_mode()
@@ -511,6 +520,8 @@ def parse_incoming_command(command, client_socket):
 
     if args_length < 1:
        send_string = "Nothing received\n"
+    elif cmd == "avoid":
+        send_string = avoid_mode()
     elif cmd == "direction":
         send_string = set_direction(command_and_args)
     elif cmd == "distance":

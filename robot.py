@@ -64,6 +64,8 @@ ACTION_FOLLOW = 2
 ACTION_HOME = 3
 ACTION_LINE_BLACK = 4
 ACTION_LINE_WHITE = 5
+ACTION_AVOID = 6
+
 
 LIGHT_BARRIER = 35000
 FOLLOW_LINE_STEP = 0.2
@@ -103,6 +105,40 @@ class Robot:
 
 
 
+   def avoid(self):
+      # This function is basically the opposite of the "follow" function.
+      # We try to move away from any object which is closer than MIDDLE_DISTANCE
+      front_distance = self.forward_distance
+      rear_distance = self.reverse_distance
+      steps = 0.3
+
+      # There are a few possibilities...
+      # It is possible something is close to us in front and in back
+      # We should turn
+      if front_distance < MIDDLE_DISTANCE and rear_distance < MIDDLE_DISTANCE:
+         number = random.randint(0,1)
+         if number == 0:
+            degrees = -45
+         else:
+            degress = 45
+         self.turn(degrees)
+
+      # Something is close behind us, but not close in front of us.
+      # Meaning we should move forward.
+      elif rear_distance < MIDDLE_DISTANCE:
+         if front_distance > MIDDLE_DISTANCE or front_distance < 0:
+            self.forward_steps(steps)
+      # Another option is something is close in front of us, and nothing is behind us.
+      elif front_distance < MIDDLE_DISTANCE:
+         if rear_distance > MIDDLE_DISTANCE or rear_distance < 0:
+            self.reverse_steps(steps)
+
+      # The lat option is there is nothing in front or behind us and we can just stay
+      # Where we are.
+
+ 
+
+
    def follow(self):
       # This function is called about once a second from the update function.
       # Try to follow objects in front of us.
@@ -122,7 +158,7 @@ class Robot:
              # Put a cap on the max distance we will chase
              if delta_distance > MIDDLE_DISTANCE:
                  delta_distance = MIDDLE_DISTANCE
-             elif delta_distance < 1.0:
+             elif delta_distance < 0.5:
                  # Only move if the distance change is significant
                  return
              # A reasonable amount of steps to move is probably about half a foot
@@ -279,6 +315,9 @@ class Robot:
            self.home()
        elif self.action == ACTION_LINE_BLACK or self.action == ACTION_LINE_WHITE:
            self.follow_line()
+       elif self.action == ACTION_AVOID:
+           self.avoid()
+
 
 
    def set_lights(self, light_array, colour):
@@ -366,6 +405,12 @@ class Robot:
            return "Following black line"
        return "Manual"
         
+
+
+   def enter_avoid_mode(self):
+       self.action = ACTION_AVOID
+       self.halt()
+
         
    def enter_home_mode(self):
        self.action = ACTION_HOME
