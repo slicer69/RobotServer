@@ -58,6 +58,7 @@ def display_help():
    send_string += "distance - distance to nearest object in cm\n"
    send_string += "follow - try to follow moving objects in front of the buggy.\n"
    send_string += "forward [steps] - move the buggy forward.\n"
+   send_string += "goto <x> <y> - move robot to x,y coordinates.\n"
    send_string += "halt - come to a complete stop\n"
    send_string += "home - the robot will try to find its way back to where it started.\n"
    send_string += "honk - beep the horn\n"
@@ -403,6 +404,28 @@ def follow_mode():
    return send_string
 
 
+
+def goto_mode(command_line):
+    global robot
+
+    if len(command_line) < 3:
+        send_string = "The goto command requiers two parameters, an X and Y coordinate.\n"
+        send_string = "For example, goto 3.5 5.0\n"
+        return send_string
+
+    try:
+       x = float(command_line[1])
+       y = float(command_line[2])
+    except:
+       send_string = "Did not recognize numbers " + command_line[1] + " or " + command_line[2] + "\n"
+       return send_string
+
+    robot.enter_goto_mode(x, y)
+    send_string = "Robot is attempting to travel to ", x, ", ", y, "\n"
+    return send_string
+
+
+
 def home_mode():
     global robot
     robot.enter_home_mode()
@@ -535,6 +558,8 @@ def parse_incoming_command(command, client_socket):
         send_string = follow_mode()
     elif cmd == "forward":
         send_string = move_forward(command_and_args)
+    elif cmd == "goto":
+        send_string = goto_mode(command_and_args)
     elif cmd == "halt":
         send_string = halt_buggy()
     elif cmd == "hello":

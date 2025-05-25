@@ -65,6 +65,8 @@ ACTION_HOME = 3
 ACTION_LINE_BLACK = 4
 ACTION_LINE_WHITE = 5
 ACTION_AVOID = 6
+ACTION_GOTO = 7
+
 
 
 LIGHT_BARRIER = 35000
@@ -84,6 +86,8 @@ class Robot:
    def reset(self):
        self.x = 0
        self.y = 0
+       self.goto_x = 0.0
+       self.goto_y = 0.0
        self.direction = 0
        self.get_forward_distance()
        self.get_reverse_distance()
@@ -206,22 +210,22 @@ class Robot:
 
 
    def home(self):
-       # Try to find our way back to our starting point (0, 0)
+       # Try to find our way back to goto_x and goto_y
        # get distance from home point
-       distance = math.sqrt( (self.x)**2 + (self.y)**2 )
+       distance = math.sqrt( (self.x - self.goto_x)**2 + (self.y - self.goto_y)**2 )
        distance = round(distance, 2)
        # if close to home, stop moving
-       if distance < 0.5:
+       if distance < 0.4:
            self.enter_manual_mode()
            return
         
        # If necessary, turn toward home
        target_direction = 0
        # We are "in front" of home, turn back
-       if self.y > 0.0:
+       if self.y > self.goto_y:
            target_direction = 180
        # We are left of home, turn right
-       if self.x < 0.0:
+       if self.x < self.goto_x:
            if target_direction == 0:
                target_direction += 45
            else:
@@ -311,7 +315,7 @@ class Robot:
            self.wander()
        elif self.action == ACTION_FOLLOW:
            self.follow()
-       elif self.action == ACTION_HOME:
+       elif self.action == ACTION_HOME or self.action == ACTION_GOTO:
            self.home()
        elif self.action == ACTION_LINE_BLACK or self.action == ACTION_LINE_WHITE:
            self.follow_line()
@@ -411,11 +415,20 @@ class Robot:
        self.action = ACTION_AVOID
        self.halt()
 
+
+   def enter_goto_mode(self, new_x, new_y):
+       self.action = ACTION_GOTO
+       self.halt()
+       self.goto_x = new_x
+       self.goto_y = new_y
+
         
    def enter_home_mode(self):
        self.action = ACTION_HOME
        self.halt()
-   
+       self.goto_x = 0.0
+       self.goto_y = 0.0
+ 
 
    def enter_line_follow_mode(self, colour):
        if colour == "white":
@@ -428,6 +441,8 @@ class Robot:
    def enter_manual_mode(self):
        self.action = ACTION_MANUAL
        self.halt()
+       self.goto_x = 0.0
+       self.goto_y = 0.0
        
        
    def enter_wander_mode(self):
