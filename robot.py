@@ -44,7 +44,7 @@ REVERSE_DIRECTION = "r"
 # 1.0 being "normal", this allows us to apply more or
 # less power to the left or right motor to balance them.
 # My left motor is about 15% weaker, so gets a 0.15 boost.
-LEFT_MOTOR_ADJUST = 1.15
+LEFT_MOTOR_ADJUST = 1.1
 RIGHT_MOTOR_ADJUST = 1.0
 
 # Adjust how much time we need to apply power to turn the buggy.
@@ -119,31 +119,33 @@ class Robot:
       # There are a few possibilities...
       # It is possible something is close to us in front and in back
       # We should turn
-      if front_distance < MIDDLE_DISTANCE and rear_distance < MIDDLE_DISTANCE:
-         number = random.randint(0,1)
-         if number == 0:
-            degrees = -45
-         else:
-            degrees = 45
-         self.turn(degrees)
+      # Stuff is too far away to detect or we have an error
+      
+      if front_distance < 0 and rear_distance < 0:
+          return
+        
+      # Something is right in front of us, and maybe right behind?
+      elif front_distance < MIDDLE_DISTANCE and front_distance > 0:
+          if rear_distance > 0 and rear_distance < MIDDLE_DISTANCE:
+               number = random.randint(0,1)
+               if number == 0:
+                   degrees = -45
+               else:
+                   degrees = 45
+               self.turn(degrees)
+          else:
+              # Nothing immediate behind, reverise
+              self.reverse_steps(steps)
 
       # Another option is there is nothing close to us, in front or back
       elif front_distance > MIDDLE_DISTANCE and rear_distance > MIDDLE_DISTANCE:
           return
-
-      # Stuff is too far away to detect or we have an error
-      elif front_distance < 0 and rear_distance < 0:
-          return
-        
+  
       # Something is close behind us, but not close in front of us.
       # Meaning we should move forward.
       elif rear_distance < MIDDLE_DISTANCE:
          if front_distance > MIDDLE_DISTANCE or front_distance < 0.0:
             self.forward_steps(steps)
-      # Another option is something is close in front of us, and nothing is behind us.
-      elif front_distance < MIDDLE_DISTANCE:
-         if rear_distance > MIDDLE_DISTANCE or rear_distance < 0.0:
-            self.reverse_steps(steps)
 
 
  
@@ -215,47 +217,49 @@ class Robot:
                  self.forward_steps(FOLLOW_LINE_STEP)
 
 
-   def home(self):
-       # Try to find our way back to starting point
-       # get distance from target point
-       distance = math.sqrt( (self.x)**2 + (self.y)**2 )
-       distance = round(distance, 2)
-       # if close to home, stop moving
-       if distance < 0.3:
+
+   def goto_position(self):
+        # Figure out where we are relative to destination
+        relative_x = self.x - self.goto_x
+        relative_y = self.y - self.goto_y
+        distance = math.sqrt( (relative_x)**2 + (relative_y)**2 )
+        distance = round(distance, 2)
+
+        # We reached our destination
+        if distance < 0.5:
            self.enter_manual_mode()
-           return
-       
-       # special case for x being close to zero
-       if self.x < 0.3 and self.x > -0.3:
-           if self.y > 0:
+           return  
+    
+        # special case for x being close to zero
+        if relative_x < 0.3 and relative_x > -0.3:
+           if relative_y > 0:
                target_direction = 180
            else:
                target_direction = 0
-       # Assume X is not near to zero 
-       else: 
-           target_direction = math.atan2(self.x, self.y)
+        # Assume X is not near to zero
+        else:
+           target_direction = math.atan2(relative_x, relative_y)
            target_direction = math.degrees(target_direction)
            target_direction += 180
            if target_direction > 359:
                target_direction -= 360
-               
-       # We know which way we want to go, compare that to our current course
-       delta_direction = round(target_direction - self.direction, 0)
-       if abs(delta_direction) > 20:
-           # We are off course, need to turn
-           self.turn(delta_direction)
-           return
-        
-       # Pointed in the right direction, move toward home
-       move_status = self.forward_steps(0.4)
-       if move_status:
-           return
-       # Something is in the way, wander for now, try to find home later.
-       self.wander()
-       
-   def goto_position(self):
-        self.home()
-    
+
+        # We know which way we want to go, compare that to our current course
+        delta_direction = round(target_direction - self.direction, 0)
+        if abs(delta_direction) > 20:
+            # We are off course, need to turn, but don't spin too much at once
+            if abs(delta_direction) > 60:
+                delta_direction = round(delta_direction / 2.0, 0)
+            self.turn(delta_direction)
+            return
+
+        # Pointed in the right direction, move toward target
+        move_status = self.forward_steps(0.4)
+        if not move_status:
+            # Something is in the way, wander for now, try to find target location later.
+            self.wander()
+
+
 
    def wander(self):
       # This is called about once a second by the update function.
@@ -270,12 +274,13 @@ class Robot:
           degrees = random.randint(60, 90)
           self.turn(degrees)
       else:
-          if self.forward_distance < TOO_CLOSE and self.reverse_distance > TOO_CLOSE:
+          if self.forward_distance < MIDDLE_DISTANCE and self.forward_distance > 0:
+              if self.reverse_distance > TOO_CLOSE:
               # Something in the way, attempt to reverse
-              self.reverse_steps(WANDER_STEP)
-          # try to move forward
-          # There is space for us to move forward
-          elif self.forward_distance > MIDDLE_DISTANCE:
+                   self.reverse_steps(WANDER_STEP)
+          # Try to move forward
+          # if there is space for us to move forward
+          elif self.forward_distance > MIDDLE_DISTANCE or self.forward_distance < 0:
               move_steps = random.randint(4, 6)
               move_steps = float(move_steps / 10)
               self.forward_steps(move_steps)
@@ -320,7 +325,7 @@ class Robot:
        elif self.action == ACTION_FOLLOW:
            self.follow()
        elif self.action == ACTION_HOME:
-           self.home()
+           self.goto_position()
        elif self.action == ACTION_LINE_BLACK or self.action == ACTION_LINE_WHITE:
            self.follow_line()
        elif self.action == ACTION_AVOID:
@@ -403,16 +408,20 @@ class Robot:
 
 
    def get_mode(self):
-       if self.action == ACTION_WANDER:
-           return "Wandering"
+       if self.action == ACTION_AVOID:
+           return "Avoiding"
        if self.action == ACTION_FOLLOW:
            return "Following"
        if self.action == ACTION_HOME:
            return "Returning Home"
+       if self.action == ACTION_GOTO:
+           return "Going to " + str(self.goto_x) + ", " + str(self.goto_y)
        if self.action == ACTION_LINE_WHITE:
            return "Following white line"
        if self.action == ACTION_LINE_BLACK:
            return "Following black line"
+       if self.action == ACTION_WANDER:
+           return "Wandering"
        return "Manual"
         
 
