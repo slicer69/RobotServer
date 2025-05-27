@@ -124,21 +124,27 @@ class Robot:
          if number == 0:
             degrees = -45
          else:
-            degress = 45
+            degrees = 45
          self.turn(degrees)
 
+      # Another option is there is nothing close to us, in front or back
+      elif front_distance > MIDDLE_DISTANCE and rear_distance > MIDDLE_DISTANCE:
+          return
+
+      # Stuff is too far away to detect or we have an error
+      elif front_distance < 0 and rear_distance < 0:
+          return
+        
       # Something is close behind us, but not close in front of us.
       # Meaning we should move forward.
       elif rear_distance < MIDDLE_DISTANCE:
-         if front_distance > MIDDLE_DISTANCE or front_distance < 0:
+         if front_distance > MIDDLE_DISTANCE or front_distance < 0.0:
             self.forward_steps(steps)
       # Another option is something is close in front of us, and nothing is behind us.
       elif front_distance < MIDDLE_DISTANCE:
-         if rear_distance > MIDDLE_DISTANCE or rear_distance < 0:
+         if rear_distance > MIDDLE_DISTANCE or rear_distance < 0.0:
             self.reverse_steps(steps)
 
-      # The lat option is there is nothing in front or behind us and we can just stay
-      # Where we are.
 
  
 
@@ -210,32 +216,28 @@ class Robot:
 
 
    def home(self):
-       # Try to find our way back to goto_x and goto_y
-       # get distance from home point
-       distance = math.sqrt( (self.x - self.goto_x)**2 + (self.y - self.goto_y)**2 )
+       # Try to find our way back to starting point
+       # get distance from target point
+       distance = math.sqrt( (self.x)**2 + (self.y)**2 )
        distance = round(distance, 2)
        # if close to home, stop moving
-       if distance < 0.4:
+       if distance < 0.3:
            self.enter_manual_mode()
            return
-        
-       # If necessary, turn toward home
-       target_direction = 0
-       # We are "in front" of home, turn back
-       if self.y > self.goto_y:
-           target_direction = 180
-       # We are left of home, turn right
-       if self.x < self.goto_x:
-           if target_direction == 0:
-               target_direction += 45
+       
+       # special case for x being close to zero
+       if self.x < 0.3 and self.x > -0.3:
+           if self.y > 0:
+               target_direction = 180
            else:
-               target_direction -= 45
-       else:
-           # We are right of home, turn left
-           if target_direction == 0:
-               target_direction -= 45
-           else:
-               target_direction += 45
+               target_direction = 0
+       # Assume X is not near to zero 
+       else: 
+           target_direction = math.atan2(self.x, self.y)
+           target_direction = math.degrees(target_direction)
+           target_direction += 180
+           if target_direction > 359:
+               target_direction -= 360
                
        # We know which way we want to go, compare that to our current course
        delta_direction = round(target_direction - self.direction, 0)
@@ -245,13 +247,15 @@ class Robot:
            return
         
        # Pointed in the right direction, move toward home
-       move_status = self.forward_steps(0.5)
+       move_status = self.forward_steps(0.4)
        if move_status:
            return
        # Something is in the way, wander for now, try to find home later.
        self.wander()
        
-       
+   def goto_position(self):
+        self.home()
+    
 
    def wander(self):
       # This is called about once a second by the update function.
@@ -315,12 +319,14 @@ class Robot:
            self.wander()
        elif self.action == ACTION_FOLLOW:
            self.follow()
-       elif self.action == ACTION_HOME or self.action == ACTION_GOTO:
+       elif self.action == ACTION_HOME:
            self.home()
        elif self.action == ACTION_LINE_BLACK or self.action == ACTION_LINE_WHITE:
            self.follow_line()
        elif self.action == ACTION_AVOID:
            self.avoid()
+       elif self.action == ACTION_GOTO:
+           self.goto_position()
 
 
 

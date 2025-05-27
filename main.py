@@ -421,7 +421,7 @@ def goto_mode(command_line):
        return send_string
 
     robot.enter_goto_mode(x, y)
-    send_string = "Robot is attempting to travel to ", x, ", ", y, "\n"
+    send_string = "Robot is attempting to travel to " + str(x) + ", " + str(y) + "\n"
     return send_string
 
 
