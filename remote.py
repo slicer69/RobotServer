@@ -51,6 +51,7 @@ def send_message(to_socket, the_message):
 
 # Buttons are translated into commands the robot knows.
 def button_to_message(the_button):
+   text = " \n"
    if the_button == 0:
       text = "lights yellow\n"
    elif the_button == 1:
@@ -104,6 +105,7 @@ def main():
                       message = button_to_message(event.button)
                       send_message(client_socket, message)
                       if message == "exit\n":
+                         time.sleep(1)
                          # client_socket.close()
                          pygame.quit()
                          sys.exit(0)
