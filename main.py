@@ -70,8 +70,10 @@ def display_help():
    send_string += "sensors [barrier]- report the light levels detected. Set light/dark barrier.\n"
    send_string += "speed [new_speed] - get the current speed or set engines to a new speed\n"
    send_string += "spin <left/right> - spin the buggy in place\n"
+   send_string += "square [length] - move in a square (forward, right, forward, right)\n"
    send_string += "status - get status report from the buggy\n"
-   send_string += "step - [steps] - move the buggy forward.\n"
+   send_string += "step [steps] - move the buggy forward.\n"
+   send_string += "triangle [length] - move the buggy in the shape of a triangle.\n"
    send_string += "turn <degrees> - turn the buggy left or right a number of degrees\n"
    send_string += "wander - the robot will move about randomly. Do not leave unattended.\n"
    send_string += "where - have the robot report on its position and direction\n"
@@ -373,6 +375,73 @@ def move_reverse(command_line):
 
 
 
+def move_in_square(command_line):
+   global robot
+   robot.enter_manual_mode()
+   if len(command_line) < 2:
+      send_string = "Please provide the length of the square's sides.\n"
+      return send_string
+
+   line_length = 0.0
+   try:
+      line_length = float(command_line[1])
+   except:
+      send_string = "Did not recognize " + command_line[1] + "\n"
+      return send_string
+
+   if line_length < 0.1 or line_length > 10.0:
+      send_string = "Please specify a length in the range of 0.1 to 10.0\n"
+      return send_string
+
+   for sides in range(4):
+      robot.forward_steps(line_length)
+      time.sleep(1)
+      robot.turn(90)
+      time.sleep(1)
+      
+   send_string = "Finished outlining a square.\n"
+   return send_string
+
+
+def move_in_triangle(command_line):
+   global robot
+   robot.enter_manual_mode()
+   if len(command_line) < 2:
+      send_string = "Please provide the length of the triangle's sides.\n"
+      return send_string
+
+   line_length = 0.0
+   try:
+      line_length = float(command_line[1])
+   except:
+      send_string = "Did not recognize " + command_line[1] + "\n"
+      return send_string
+
+   if line_length < 0.1 or line_length > 10.0:
+      send_string = "Please specify a length in the range of 0.1 to 10.0\n"
+      return send_string
+
+   robot.turn(30)
+   time.sleep(1)
+   robot.forward_steps(line_length)
+   time.sleep(1)
+   robot.turn(60)
+   robot.turn(60)
+   time.sleep(1)
+   robot.forward_steps(line_length)
+   time.sleep(1)
+   robot.turn(60)
+   robot.turn(60)
+   time.sleep(1)
+   robot.forward_steps(line_length)
+   time.sleep(1)
+   robot.turn(90)
+   
+   send_string = "Finished outlining a triangle.\n"
+   return send_string
+
+
+
 def set_speed(command_line):
     global robot
     if len(command_line) < 2:
@@ -593,12 +662,16 @@ def parse_incoming_command(command, client_socket):
         send_string = set_speed(command_and_args)
     elif cmd == "spin":
         send_string = spin_buggy(command_and_args)
+    elif cmd == "square":
+        send_string = move_in_square(command_and_args)
     elif cmd == "status":
         send_string = get_status()
     elif cmd == "step":
         send_string = move_forward(command_and_args)
     elif cmd == "temp":
         send_string = sense_temperature()
+    elif cmd == "triangle":
+        send_string = move_in_triangle(command_and_args)
     elif cmd == "turn":
         send_string = turn_buggy(command_and_args)
     elif cmd == "wander":
