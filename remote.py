@@ -51,23 +51,23 @@ def send_message(to_socket, the_message):
 
 # Buttons are translated into commands the robot knows.
 def button_to_message(the_button):
-   text = " \n"
+   text = " "
    if the_button == 0:
-      text = "lights yellow\n"
+      text = "lights yellow"
    elif the_button == 1:
-      text = "lights blue\n"
+      text = "lights blue"
    elif the_button == 2:
-      text = "lights green\n"
+      text = "lights green"
    elif the_button == 3:
-      text = "lights red\n"
+      text = "lights red"
    elif the_button == 4:
-      text = "wander\n"
+      text = "wander"
    elif the_button == 5:
-      text = "home\n"
+      text = "home"
    elif the_button == 6 or the_button == 7:
-      text = "halt\n"
+      text = "halt"
    elif the_button == 8 or the_button == 9:
-      text = "exit\n"
+      text = "exit"
    # print("Translated ", the_button, " into ", text, "\n")
    return text
 
@@ -94,8 +94,9 @@ def main():
           send_direction = False
           for event in pygame.event.get():
               if event.type == pygame.QUIT:
-                  send_message(client_socket, "exit\n")
+                  send_message(client_socket, "exit")
                   # client_socket.close()
+                  time.sleep(1)
                   pygame.quit()
                   sys.exit(0)
               elif event.type == pygame.JOYBUTTONDOWN:
@@ -104,7 +105,7 @@ def main():
                       # print(f"Button {event.button} pressed.")
                       message = button_to_message(event.button)
                       send_message(client_socket, message)
-                      if message == "exit\n":
+                      if message == "exit":
                          time.sleep(1)
                          # client_socket.close()
                          pygame.quit()
