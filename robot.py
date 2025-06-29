@@ -99,6 +99,7 @@ class Robot:
        self.speed = 0
        self.light_barrier = LIGHT_BARRIER
        self.action = ACTION_MANUAL
+       self.pen_up()
      
 
    def halt(self):
@@ -410,11 +411,16 @@ class Robot:
 
    def pen_up(self):
        self.buggy.goToPosition(2, 45)
+       self.pen_position = "up"
 
 
    def pen_down(self):
        self.buggy.goToPosition(2, 125)
+       self.pen_position = "down"
 
+
+   def get_pen_position(self):
+       return self.pen_position
 
 
    def get_mode(self):

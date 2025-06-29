@@ -54,6 +54,7 @@ def display_help():
    
    send_string += "Tasks the robot knows how to do:\n\n"
    send_string += "avoid - try to move away from nearby objects.\n"
+   send_string += "circle <radius> - drive in a circle\n"
    send_string += "direction [degrees] - ask/tell the robot which way it is facing.\n"
    send_string += "distance - distance to nearest object in cm\n"
    send_string += "follow - try to follow moving objects in front of the buggy.\n"
@@ -375,6 +376,36 @@ def move_reverse(command_line):
     return send_string
 
 
+def move_in_circle(command_line):
+  global robot
+  robot.enter_manual_mode()
+
+  if len(command_line) < 2:
+     send_string = "Please provide the radius of the circle.\n"
+     return send_string
+
+  radius = 0.0
+  try:
+     radius = float(command_line[1])
+  except:
+     send_string = "Did not recognize " + command_line[1] + "\n"
+     return send_string
+
+  if radius < 0.1 or radius > 10.0:
+     send_string = "Please specify a radius in the range of 0.1 to 10.0\n"
+     return send_string
+
+  # A hexagon is basically a crude circle with radian-length sides
+  for side in range(6):
+     robot.forward_steps(radius)
+     time.sleep(1)
+     robot.turn(60)
+     time.sleep(1)
+
+  send_string = "Finished driving in a circle.\n"
+  return send_string
+
+
 
 def move_in_square(command_line):
    global robot
@@ -564,6 +595,8 @@ def get_status():
     mode = robot.get_mode()
     send_string += "Mode: " + mode + "\n"
     send_string += where_report()
+    mode = robot.get_pen_position()
+    send_string += "Pen position: " + mode + "\n"
     return send_string
 
 
@@ -605,6 +638,8 @@ def light_sensors(command_line):
 
 def hold_pen(command_line):
    global robot
+
+   robot.enter_manual_mode()
 
    if len(command_line) < 2:
       send_string = "Please provide 'up' or 'down' to indicate if the pen should be raised or lowered.\n"
