@@ -407,6 +407,16 @@ class Robot:
       self.buggy.beepHorn()
 
 
+
+   def pen_up(self):
+       self.buggy.goToPosition(2, 45)
+
+
+   def pen_down(self):
+       self.buggy.goToPosition(2, 125)
+
+
+
    def get_mode(self):
        if self.action == ACTION_AVOID:
            return "Avoiding"

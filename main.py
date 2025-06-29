@@ -65,6 +65,7 @@ def display_help():
    send_string += "lights <colour> - change the colour of the LED lights on the buggy\n"
    send_string += "line [black/white] - follow a line on the floor. Defaults to black.\n"
    send_string += "manual - Have the robot stop what it is doing and await instructions\n"
+   send_string += "pen [up|down] - raise or lower the pen\n"
    send_string += "position [x] [y] - Set the robots current (x,y) location.\n"
    send_string += "reverse [steps] - move the buggy backwards\n"
    send_string += "sensors [barrier]- report the light levels detected. Set light/dark barrier.\n"
@@ -601,6 +602,26 @@ def light_sensors(command_line):
     return send_string
 
 
+
+def hold_pen(command_line):
+   global robot
+
+   if len(command_line) < 2:
+      send_string = "Please provide 'up' or 'down' to indicate if the pen should be raised or lowered.\n"
+      return send_string
+
+   if command_line[1] == "up":
+      robot.pen_up()
+      send_string = "Raising the pen arm.\n"
+   elif command_line[1] == "down":
+      robot.pen_down()
+      send_string = "Lowering the pen arm.\n"
+   else:
+      send_string = "I did not understand. Please specify 'pen up' or 'pen down'.\n"
+   return send_string
+
+
+
 def parse_incoming_command(command, client_socket):
     global robot
     command_and_args = command.split()
@@ -650,6 +671,8 @@ def parse_incoming_command(command, client_socket):
         send_string = follow_line(command_and_args)
     elif cmd == "manual":
         send_string = manual_mode()
+    elif cmd == "pen":
+        send_string = hold_pen(command_and_args)
     elif cmd == "position":
         send_string = set_position(command_and_args)
     elif cmd == "reverse":
