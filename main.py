@@ -642,7 +642,8 @@ def hold_pen(command_line):
    robot.enter_manual_mode()
 
    if len(command_line) < 2:
-      send_string = "Please provide 'up' or 'down' to indicate if the pen should be raised or lowered.\n"
+      pen_position = robot.get_pen_position()
+      send_string = "The pen is currently " + pen_position + "\n"
       return send_string
 
    if command_line[1] == "up":
@@ -670,6 +671,8 @@ def parse_incoming_command(command, client_socket):
        send_string = "Nothing received\n"
     elif cmd == "avoid":
         send_string = avoid_mode()
+    elif cmd == "circle":
+        send_string = move_in_circle(command_and_args)
     elif cmd == "direction":
         send_string = set_direction(command_and_args)
     elif cmd == "distance":
