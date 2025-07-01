@@ -53,6 +53,7 @@ def display_help():
    send_string += "exit - disconnect client\n\n"
    
    send_string += "Tasks the robot knows how to do:\n\n"
+   send_string += "art <line_length> - create random artwork of a given size.\n"
    send_string += "avoid - try to move away from nearby objects.\n"
    send_string += "circle <radius> - drive in a circle\n"
    send_string += "direction [degrees] - ask/tell the robot which way it is facing.\n"
@@ -242,6 +243,30 @@ def change_lights(command_line):
     return return_string
 
 
+# Put the robot in art mode to randomly create artwork.
+# The max size of lines is specified as a parameter.
+def create_art(command_line):
+    global robot
+    robot.enter_manual_mode()
+    
+    if len(command_line) < 2:
+        send_string = "Please specify the maximum line length for a shape.\n"
+        return send_string
+    
+    max_line = 0.1
+    try:
+        max_line = float(command_line[1])
+    except:
+        send_string = "I did not understand " + command_line[1] + "\n"
+        return send_string
+    
+    if max_line < 0.1 or max_line > 10.0:
+        send_string = "Please provide a line length in the range of 0.1 to 10.0.\n"
+        return send_string
+    robot.enter_art_mode(max_line)
+    send_string = "Entering art creation mode.\n"
+    return send_string
+
 
 def sense_temperature():
     sensor_temp = machine.ADC(4)
@@ -395,13 +420,7 @@ def move_in_circle(command_line):
      send_string = "Please specify a radius in the range of 0.1 to 10.0\n"
      return send_string
 
-  # A hexagon is basically a crude circle with radian-length sides
-  for side in range(6):
-     robot.forward_steps(radius)
-     time.sleep(1)
-     robot.turn(60)
-     time.sleep(1)
-
+  robot.draw_circle(radius)
   send_string = "Finished driving in a circle.\n"
   return send_string
 
@@ -425,12 +444,7 @@ def move_in_square(command_line):
       send_string = "Please specify a length in the range of 0.1 to 10.0\n"
       return send_string
 
-   for sides in range(4):
-      robot.forward_steps(line_length)
-      time.sleep(1)
-      robot.turn(90)
-      time.sleep(1)
-      
+   robot.draw_square(line_length)      
    send_string = "Finished outlining a square.\n"
    return send_string
 
@@ -453,22 +467,7 @@ def move_in_triangle(command_line):
       send_string = "Please specify a length in the range of 0.1 to 10.0\n"
       return send_string
 
-   robot.turn(30)
-   time.sleep(1)
-   robot.forward_steps(line_length)
-   time.sleep(1)
-   robot.turn(60)
-   robot.turn(60)
-   time.sleep(1)
-   robot.forward_steps(line_length)
-   time.sleep(1)
-   robot.turn(60)
-   robot.turn(60)
-   time.sleep(1)
-   robot.forward_steps(line_length)
-   time.sleep(1)
-   robot.turn(90)
-   
+   robot.draw_triangle(line_length)
    send_string = "Finished outlining a triangle.\n"
    return send_string
 
@@ -669,6 +668,8 @@ def parse_incoming_command(command, client_socket):
 
     if args_length < 1:
        send_string = "Nothing received\n"
+    elif cmd == "art":
+        send_string = create_art(command_and_args)
     elif cmd == "avoid":
         send_string = avoid_mode()
     elif cmd == "circle":

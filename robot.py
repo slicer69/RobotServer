@@ -66,6 +66,7 @@ ACTION_LINE_BLACK = 4
 ACTION_LINE_WHITE = 5
 ACTION_AVOID = 6
 ACTION_GOTO = 7
+ACTION_ART = 8
 
 
 
@@ -100,6 +101,8 @@ class Robot:
        self.light_barrier = LIGHT_BARRIER
        self.action = ACTION_MANUAL
        self.pen_up()
+       self.shape_size = 0.1
+       
      
 
    def halt(self):
@@ -149,7 +152,18 @@ class Robot:
             self.forward_steps(steps)
 
 
- 
+   def create_art(self):
+       # This function causes the buggy to wander,
+       # create a random shape. This loops as long as we are in art mode.
+       self.wander()
+       next_shape = random.randint(0, 3)
+       if next_shape == 0:
+           self.draw_circle(self.shape_size)
+       elif next_shape == 1:
+           self.draw_triangle(self.shape_size)
+       elif next_shape == 2:
+           self.draw_square(self.shape_size)
+           
 
 
    def follow(self):
@@ -333,6 +347,8 @@ class Robot:
            self.avoid()
        elif self.action == ACTION_GOTO:
            self.goto_position()
+       elif self.action == ACTION_ART:
+           self.create_art()
 
 
 
@@ -469,6 +485,12 @@ class Robot:
        self.halt()
 
 
+   def enter_art_mode(self, shape_size):
+       self.action = ACTION_ART
+       self.halt()
+       self.shape_size = shape_size
+       
+       
    def enter_manual_mode(self):
        self.action = ACTION_MANUAL
        self.halt()
@@ -640,3 +662,60 @@ class Robot:
        self.y = round(new_y, 2)
   
       
+
+   # Draw a circle with our buggy.
+   # Assume we are on the parameter and want to draw
+   # by moving forward and to the right.
+   def draw_circle(self, radius):
+       if radius < 0.1 or radius > 10.0:
+           return False
+        
+       # A hexagon is basically a crude circle with radian-length sides
+       for side in range(6):
+           self.forward_steps(radius)
+           time.sleep(1)
+           self.turn(60)
+           time.sleep(1)
+       return True
+    
+    
+   # Draw a square by moving forward and turning right
+   # four times.
+   def draw_square(self, line_length):
+        if line_length < 0.1 or line_length > 10.0:
+            return False
+    
+        for sides in range(4):
+           self.forward_steps(line_length)
+           time.sleep(1)
+           self.turn(90)
+           time.sleep(1)
+        return True
+    
+    
+   # Draw a triangle. Assume we are starting from the bottom-left
+   # corner, facing "up". We need to turn, then
+   # draw an equaterial triangle.
+   # We break the turns into smaller chunks because
+   # turns become more inaccurate the longer they are.
+   def draw_triangle(self, line_length):
+        if line_length < 0.1 or line_length > 10.0:
+            return False
+        
+        self.turn(30)
+        time.sleep(1)
+        self.forward_steps(line_length)
+        time.sleep(1)
+        self.turn(60)
+        self.turn(60)
+        time.sleep(1)
+        self.forward_steps(line_length)
+        time.sleep(1)
+        self.turn(60)
+        self.turn(60)
+        time.sleep(1)
+        self.forward_steps(line_length)
+        time.sleep(1)
+        self.turn(90)
+        return True
+    
