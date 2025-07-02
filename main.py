@@ -67,7 +67,7 @@ def display_help():
    send_string += "lights <colour> - change the colour of the LED lights on the buggy\n"
    send_string += "line [black/white] - follow a line on the floor. Defaults to black.\n"
    send_string += "manual - Have the robot stop what it is doing and await instructions\n"
-   send_string += "pen [up|down] - raise or lower the pen\n"
+   send_string += "pen [up|down|toggle] - raise or lower the pen\n"
    send_string += "position [x] [y] - Set the robots current (x,y) location.\n"
    send_string += "reverse [steps] - move the buggy backwards\n"
    send_string += "sensors [barrier]- report the light levels detected. Set light/dark barrier.\n"
@@ -651,8 +651,11 @@ def hold_pen(command_line):
    elif command_line[1] == "down":
       robot.pen_down()
       send_string = "Lowering the pen arm.\n"
+   elif command_line[1] == "toggle":
+      robot.pen_toggle()
+      send_string = "Changing pen position to " + robot.get_pen_position() + "\n"
    else:
-      send_string = "I did not understand. Please specify 'pen up' or 'pen down'.\n"
+      send_string = "I did not understand. Please specify 'pen up', 'pen down', or 'pen toggle'.\n"
    return send_string
 
 

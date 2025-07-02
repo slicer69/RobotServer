@@ -434,6 +434,12 @@ class Robot:
        self.buggy.goToPosition(2, 125)
        self.pen_position = "down"
 
+   def pen_toggle(self):
+       if self.pen_position == "up":
+          self.pen_down()
+       else:
+          self.pen_up()
+
 
    def get_pen_position(self):
        return self.pen_position
