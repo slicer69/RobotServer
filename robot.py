@@ -412,6 +412,17 @@ class Robot:
       return False
 
 
+   def speed_up(self):
+        new_speed = min(100, self.speed + 10)
+        self.set_speed(new_speed)
+        return self.speed
+        
+   def speed_down(self):
+        new_speed = max(0, self.speed - 10)
+        self.set_speed(new_speed)
+        return self.speed
+
+
    def set_light_barrier_level(self, new_barrier):
        if new_barrier >= 0 and new_barrier <= 65000:
            self.light_barrier = new_barrier

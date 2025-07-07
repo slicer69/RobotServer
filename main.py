@@ -71,7 +71,7 @@ def display_help():
    send_string += "position [x] [y] - Set the robots current (x,y) location.\n"
    send_string += "reverse [steps] - move the buggy backwards\n"
    send_string += "sensors [barrier]- report the light levels detected. Set light/dark barrier.\n"
-   send_string += "speed [new_speed] - get the current speed or set engines to a new speed\n"
+   send_string += "speed [up|down|new_speed] - get the current speed or set engines to a new speed\n"
    send_string += "spin <left/right> - spin the buggy in place\n"
    send_string += "square [length] - move in a square (forward, right, forward, right)\n"
    send_string += "status - get status report from the buggy\n"
@@ -479,11 +479,24 @@ def set_speed(command_line):
         old_speed = robot.get_speed()
         send_string = "Current speed: " + str(old_speed) + "\n"
         return send_string
-    new_speed = int(command_line[1])
-    if new_speed < 0 or new_speed > 100:
-        send_string = "Speed needs to be in the range of 0-100\n"
-        return send_string
-    robot.set_speed(new_speed)
+    
+    if command_line[1] == "up":
+        new_speed = robot.speed_up()
+    elif command_line[1] == "down":
+        new_speed = robot.speed_down()
+    else:
+       # Probably a number
+       try:
+           new_speed = int(command_line[1])
+       except:
+           send_string = "Unable to recognize " + command_line[1] + " as an integer.\n"
+           return send_string
+        
+       if new_speed < 0 or new_speed > 100:
+          send_string = "Speed needs to be in the range of 0-100\n"
+          return send_string
+       robot.set_speed(new_speed)
+       
     send_string = "Set new speed to " + str(new_speed) + "\n"
     return send_string
 

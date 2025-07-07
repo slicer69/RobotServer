@@ -24,12 +24,13 @@ def display_help():
    print("Right axis - turn and drive the robot with larger adjustments.")
    print("Triggers - stop the robot.")
    print("Left button - tell robot to wander.")
-   print("Right button - tell robot to return to where it started.")
+   print("Right button - raise or lower the pen arm.")
    print("Y button - turn lights yellow.")
    print("B button - turn lights blue.")
    print("A button - turn lights green.")
    print("X button - turn lights red.")
-   print("+ or - button - disconnect.")
+   print("+ or - buttons - speed up or slow down.")
+   print("Select or Start - disconnect.")
    print("")
 
 
@@ -63,12 +64,15 @@ def button_to_message(the_button):
    elif the_button == 4:
       text = "wander"
    elif the_button == 5:
-      text = "home"
+      text = "pen toggle"
    elif the_button == 6 or the_button == 7:
       text = "halt"
-   elif the_button == 8 or the_button == 9:
+   elif the_button == 8:
+      text = "speed down"
+   elif the_button == 9:
+      text = "speed up"
+   elif the_button == 12 or the_button == 13:
       text = "exit"
-   # print("Translated ", the_button, " into ", text, "\n")
    return text
 
 
