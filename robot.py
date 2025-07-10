@@ -155,7 +155,9 @@ class Robot:
    def create_art(self):
        # This function causes the buggy to wander,
        # create a random shape. This loops as long as we are in art mode.
+       self.pen_up()
        self.wander()
+       self.pen_down()
        next_shape = random.randint(0, 3)
        if next_shape == 0:
            self.draw_circle(self.shape_size)
@@ -163,7 +165,7 @@ class Robot:
            self.draw_triangle(self.shape_size)
        elif next_shape == 2:
            self.draw_square(self.shape_size)
-           
+       # Last option left blank intentionally to allow robot to pause.      
 
 
    def follow(self):
@@ -513,7 +515,8 @@ class Robot:
        self.halt()
        self.goto_x = 0.0
        self.goto_y = 0.0
-       
+       self.pen_up()
+
        
    def enter_wander_mode(self):
        self.halt()
