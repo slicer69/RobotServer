@@ -71,7 +71,7 @@ ACTION_ART = 8
 
 
 LIGHT_BARRIER = 35000
-FOLLOW_LINE_STEP = 0.2
+FOLLOW_LINE_STEP = 0.1
 WANDER_STEP = 0.3
 
 class Robot:
@@ -156,7 +156,7 @@ class Robot:
        # This function causes the buggy to wander,
        # create a random shape. This loops as long as we are in art mode.
        self.pen_up()
-       self.wander()
+       self.wander(self.shape_size)
        self.pen_down()
        next_shape = random.randint(0, 3)
        if next_shape == 0:
@@ -219,19 +219,19 @@ class Robot:
           # If black, follow higher value senor
           if self.action == ACTION_LINE_BLACK:
              if left_eye > right_eye and left_eye > centre_eye:
-                 self.turn(-20)
+                 self.turn(-10)
              elif left_eye < right_eye and left_eye < centre_eye:
-                 self.turn(20)
+                 self.turn(10)
              else:
-                 self.forward_steps(FOLLOW_LINE_STEP)
+                 self.turn(10)
    
           elif self.action == ACTION_LINE_WHITE:
              if left_eye < right_eye and left_eye < centre_eye:
-                 self.turn(-20)
+                 self.turn(-10)
              elif left_eye > right_eye and left_eye > centre_eye:
-                 self.turn(20)
+                 self.turn(10)
              else:
-                 self.forward_steps(FOLLOW_LINE_STEP)
+                 self.turn(-10)
 
 
 
@@ -278,7 +278,7 @@ class Robot:
 
 
 
-   def wander(self):
+   def wander(self, distance_to_move = 0.0):
       # This is called about once a second by the update function.
       # Move about, more or less randomly.
       new_action = random.randint(0, 3)
@@ -298,8 +298,11 @@ class Robot:
           # Try to move forward
           # if there is space for us to move forward
           elif self.forward_distance > MIDDLE_DISTANCE or self.forward_distance < 0:
-              move_steps = random.randint(4, 6)
-              move_steps = float(move_steps / 10)
+              if distance_to_move >= 0.1:
+                  move_steps = distance_to_move
+              else:
+                  move_steps = random.randint(4, 6)
+                  move_steps = float(move_steps / 10)
               self.forward_steps(move_steps)
           else:
               # We do not have space to move forward or backward, try turning left or right
