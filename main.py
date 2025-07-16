@@ -43,6 +43,7 @@ def enable_networking(wait_time):
 
 def display_help():
    send_string = "Tasks the Pico knows how to do:\n\n"
+   send_string += "! - repeat last command\n"
    send_string += "blink [times] - toggle LED <times> or enable/disable if no number specified\n"
    send_string += "echo [text] - repeats text back to client\n"
    send_string += "hello - say Hello to the client\n"
@@ -769,8 +770,15 @@ def create_network_service(host='0.0.0.0', port=DEFAULT_PORT):
     
     # Create a socket object
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.bind( (host, port) )
-                      
+    bind_completed = False
+    while not bind_completed:
+       try:
+           server_socket.bind( (host, port) )
+           bind_completed = True
+       except:
+           print("Unable to bind port. Trying again in ten seconds.")
+           time.sleep(10)
+           
     # Listen for incoming connections
     server_socket.listen(5)
     print(f"Server listening on {host}:{port}")
@@ -784,6 +792,7 @@ def create_network_service(host='0.0.0.0', port=DEFAULT_PORT):
         client_socket.send( "Type 'help' to get a list of recognized commands.\n".encode() )
 
         Reset_Everything()
+        previous_command = ""
         
         # Receive data from the client
         keep_running = True
@@ -791,8 +800,11 @@ def create_network_service(host='0.0.0.0', port=DEFAULT_PORT):
             client_socket.send( "Ron is ready> ".encode() )
             data = client_socket.recv(1024)
             if data:
-               print(f"Received: {data.decode()}")
-               status = parse_incoming_command(data.decode(), client_socket)
+               if data.decode()[0] == "!":
+                   status = parse_incoming_command(previous_command, client_socket)
+               else:
+                   status = parse_incoming_command(data.decode(), client_socket)
+                   previous_command = data.decode()
                keep_running = status
             else:
                keep_running = False
