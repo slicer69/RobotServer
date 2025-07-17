@@ -250,8 +250,8 @@ class Robot:
         elif delta_direction < -180:
             delta_direction += 360
 
-        # Only attempt to turn buggy if the different is 20 degrees or more
-        if abs(delta_direction) >= 20:
+        # Only attempt to turn buggy if the different is 15 degrees or more
+        if abs(delta_direction) >= 15:
             # We are off course, need to turn, but don't spin too much at once
             if delta_direction > 45:
                 delta_direction = 45

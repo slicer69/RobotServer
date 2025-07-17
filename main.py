@@ -626,8 +626,10 @@ def get_status():
         send_string += "reverse\n"
     else:
         send_string += "forward\n"
-    send_string += "Distance to nearest forward object: " + str(robot.forward_distance) + "cm\n"
-    send_string += "Distance to nearest rear object: " + str(robot.reverse_distance) + "cm\n"
+    distance = round(robot.forward_distance, 1)
+    send_string += "Distance to nearest forward object: " + str(distance) + " cm\n"
+    distance = round(robot.reverse_distance, 1)
+    send_string += "Distance to nearest rear object: " + str(distance) + " cm\n"
     send_string += light_sensors([0])
     if robot.lights_auto:
         send_string += "Lights: managed automatically.\n"
