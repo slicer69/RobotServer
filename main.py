@@ -79,6 +79,7 @@ def display_help():
    send_string += "step [steps] - move the buggy forward.\n"
    send_string += "triangle [length] - move the buggy in the shape of a triangle.\n"
    send_string += "turn <degrees> - turn the buggy left or right a number of degrees\n"
+   send_string += "turnto <degrees> - turn the buggy to the specified direction\n"
    send_string += "wander - the robot will move about randomly. Do not leave unattended.\n"
    send_string += "where - have the robot report on its position and direction\n"
    
@@ -333,6 +334,33 @@ def turn_buggy(command_line):
        send_string = "The buggy ran into a problem trying to turn.\n"
     return send_string
 
+
+
+def turn_buggy_to(command_line):
+   global robot
+
+   robot.enter_manual_mode()
+   if len(command_line) < 2:
+      send_string = "Please provide the new direction the buggy should face, in degrees.\n"
+      return send_string
+
+   try:
+      degrees = int(command_line[1])
+   except:
+      send_string = "I did not understand " + command_line[1] + ". Please use a whole number.\n"
+      return send_string
+
+   if degrees < 0 or degrees >= 360:
+      send_string = "Please provide a number in the range of 0 to 359.\n"
+      return send_string
+
+   status = robot.turn_to_direction(degrees)
+   while status:
+       time.sleep(1)
+       status = robot.turn_to_direction(degrees)
+       
+   send_string = "Turning to " + str(degrees) + ".\n"
+   return send_string
 
 
 def halt_buggy():
@@ -753,6 +781,8 @@ def parse_incoming_command(command, client_socket):
         send_string = move_in_triangle(command_and_args)
     elif cmd == "turn":
         send_string = turn_buggy(command_and_args)
+    elif cmd == "turnto":
+        send_string = turn_buggy_to(command_and_args)
     elif cmd == "wander":
         send_string = wander_mode()
     elif cmd == "where":

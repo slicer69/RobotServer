@@ -234,6 +234,35 @@ class Robot:
                  self.turn(-10)
 
 
+   # Turn toward a specified direction. Return true if we turned.
+   # Return false if we cannot turn or have finished the turn.
+   def turn_to_direction(self, target_direction):
+        # Turn from our current direction to a new
+        # direction.
+        if target_direction < 0 or target_direction > 359:
+            return False
+
+        # We know which way we want to go, compare that to our current course
+        delta_direction = round(target_direction - self.direction, 0)
+        # Avoid turning 3/4 of a circle right when we could turn left
+        if delta_direction > 180:
+            delta_direction -= 360
+        elif delta_direction < -180:
+            delta_direction += 360
+
+        # Only attempt to turn buggy if the different is 20 degrees or more
+        if abs(delta_direction) >= 20:
+            # We are off course, need to turn, but don't spin too much at once
+            if delta_direction > 45:
+                delta_direction = 45
+            elif delta_direction < -45:
+                delta_direction = -45
+            self.turn(delta_direction)
+            return True
+
+        # We did not bother to turn
+        return False
+
 
    def goto_position(self):
         # Figure out where we are relative to destination
@@ -260,21 +289,13 @@ class Robot:
            target_direction = math.degrees(target_direction)
            # Direction is backwards, flip compass
            target_direction += 180
-           while target_direction > 359:
+           while target_direction >= 360:
                target_direction -= 360
 
-        # We know which way we want to go, compare that to our current course
-        delta_direction = round(target_direction - self.direction, 0)
-        # Avoid turning 3/4 of a circle right when we could turn left
-        if delta_direction > 180:
-            delta_direction -= 360
-        if abs(delta_direction) > 20:
-            # We are off course, need to turn, but don't spin too much at once
-            if delta_direction > 45:
-                delta_direction = 45
-            elif delta_direction < -45:
-                delta_direction = -45
-            self.turn(delta_direction)
+        turn_status = self.turn_to_direction(target_direction)
+        # If we turned we can stop processing here for now
+        # and move next time
+        if turn_status:
             return
 
         # Pointed in the right direction, move toward target
