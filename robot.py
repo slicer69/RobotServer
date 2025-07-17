@@ -43,7 +43,7 @@ REVERSE_DIRECTION = "r"
 # Sometimes the motors have different strengths. With
 # 1.0 being "normal", this allows us to apply more or
 # less power to the left or right motor to balance them.
-# My left motor is about 15% weaker, so gets a 0.15 boost.
+# My left motor is about 10% weaker, so gets a 0.10 boost.
 LEFT_MOTOR_ADJUST = 1.1
 RIGHT_MOTOR_ADJUST = 1.0
 
@@ -51,7 +51,7 @@ RIGHT_MOTOR_ADJUST = 1.0
 # Ideally, it should be 1.0, but if an engine is stronger or weaker
 # we can adjust this. Smaller numbers make the turn angle smaller,
 # larger numbers increase the turn.
-RIGHT_TURN_MODIFIER = 0.90
+RIGHT_TURN_MODIFIER = 0.82
 LEFT_TURN_MODIFIER = 0.80
 
 # From here on, do not change variables unless you need to make
@@ -256,17 +256,24 @@ class Robot:
         # Assume X is not near to zero
         else:
            target_direction = math.atan2(relative_x, relative_y)
+           # Convert radians to degrees
            target_direction = math.degrees(target_direction)
+           # Direction is backwards, flip compass
            target_direction += 180
-           if target_direction > 359:
+           while target_direction > 359:
                target_direction -= 360
 
         # We know which way we want to go, compare that to our current course
         delta_direction = round(target_direction - self.direction, 0)
+        # Avoid turning 3/4 of a circle right when we could turn left
+        if delta_direction > 180:
+            delta_direction -= 360
         if abs(delta_direction) > 20:
             # We are off course, need to turn, but don't spin too much at once
-            if abs(delta_direction) > 60:
-                delta_direction = round(delta_direction / 2.0, 0)
+            if delta_direction > 45:
+                delta_direction = 45
+            elif delta_direction < -45:
+                delta_direction = -45
             self.turn(delta_direction)
             return
 

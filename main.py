@@ -65,7 +65,7 @@ def display_help():
    send_string += "halt - come to a complete stop\n"
    send_string += "home - the robot will try to find its way back to where it started.\n"
    send_string += "honk - beep the horn\n"
-   send_string += "lights <colour> - change the colour of the LED lights on the buggy\n"
+   send_string += "lights <on|pff|colour> - change the colour of the LED lights on the buggy\n"
    send_string += "line [black/white] - follow a line on the floor. Defaults to black.\n"
    send_string += "manual - Have the robot stop what it is doing and await instructions\n"
    send_string += "pen [up|down|toggle] - raise or lower the pen\n"
