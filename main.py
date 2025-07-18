@@ -69,6 +69,7 @@ def display_help():
    send_string += "line [black/white] - follow a line on the floor. Defaults to black.\n"
    send_string += "manual - Have the robot stop what it is doing and await instructions\n"
    send_string += "pen [up|down|toggle] - raise or lower the pen\n"
+   send_string += "play - enter Play mode, which wanders, avoids, and follows\n"
    send_string += "position [x] [y] - Set the robots current (x,y) location.\n"
    send_string += "reverse [steps] - move the buggy backwards\n"
    send_string += "sensors [barrier]- report the light levels detected. Set light/dark barrier.\n"
@@ -575,6 +576,13 @@ def home_mode():
     return send_string
 
 
+def play_mode():
+   global robot
+   robot.enter_play_mode()
+   send_string = "Robot is entering Play mode.\n"
+   return send_string
+
+
 def manual_mode():
    global robot
    robot.enter_manual_mode()
@@ -759,6 +767,8 @@ def parse_incoming_command(command, client_socket):
         send_string = manual_mode()
     elif cmd == "pen":
         send_string = hold_pen(command_and_args)
+    elif cmd == "play":
+        send_string = play_mode()
     elif cmd == "position":
         send_string = set_position(command_and_args)
     elif cmd == "reverse":

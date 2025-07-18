@@ -23,7 +23,7 @@ def display_help():
    print("Left axis - turn and drive the robot with small adjustments.")
    print("Right axis - turn and drive the robot with larger adjustments.")
    print("Triggers - stop the robot.")
-   print("Left button - tell robot to wander.")
+   print("Left button - tell robot to Play (avoid, follow, and wander).")
    print("Right button - raise or lower the pen arm.")
    print("Y button - turn lights yellow.")
    print("B button - turn lights blue.")
@@ -62,7 +62,7 @@ def button_to_message(the_button):
    elif the_button == 3:
       text = "lights red"
    elif the_button == 4:
-      text = "wander"
+      text = "play"
    elif the_button == 5:
       text = "pen toggle"
    elif the_button == 6 or the_button == 7:

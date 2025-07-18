@@ -67,6 +67,7 @@ ACTION_LINE_WHITE = 5
 ACTION_AVOID = 6
 ACTION_GOTO = 7
 ACTION_ART = 8
+ACTION_PLAY = 9
 
 
 
@@ -123,10 +124,10 @@ class Robot:
       # There are a few possibilities...
       # It is possible something is close to us in front and in back
       # We should turn
+
       # Stuff is too far away to detect or we have an error
-      
       if front_distance < 0 and rear_distance < 0:
-          return
+          return False
         
       # Something is right in front of us, and maybe right behind?
       elif front_distance < MIDDLE_DISTANCE and front_distance > 0:
@@ -138,18 +139,21 @@ class Robot:
                    degrees = 45
                self.turn(degrees)
           else:
-              # Nothing immediate behind, reverise
+              # Nothing immediate behind, reverse
               self.reverse_steps(steps)
+              return True
 
       # Another option is there is nothing close to us, in front or back
       elif front_distance > MIDDLE_DISTANCE and rear_distance > MIDDLE_DISTANCE:
-          return
+          return False
   
       # Something is close behind us, but not close in front of us.
       # Meaning we should move forward.
-      elif rear_distance < MIDDLE_DISTANCE:
+      elif rear_distance < MIDDLE_DISTANCE and rear_distance >= 0:
          if front_distance > MIDDLE_DISTANCE or front_distance < 0.0:
             self.forward_steps(steps)
+            return True
+      return False
 
 
    def create_art(self):
@@ -182,6 +186,9 @@ class Robot:
       # proportional with the object's movement.
       # Make sure distance is not an error/infinite
       if new_distance >= 0 and old_distance >= 0:
+         # Do not chase if we are too close to the object
+         if new_distance <= TOO_CLOSE:
+            return False
          if new_distance > old_distance:
              delta_distance = new_distance - old_distance
              # Put a cap on the max distance we will chase
@@ -189,13 +196,14 @@ class Robot:
                  delta_distance = MIDDLE_DISTANCE
              elif delta_distance < 0.5:
                  # Only move if the distance change is significant
-                 return
+                 return False
              # A reasonable amount of steps to move is probably about half a foot
              steps = 0.3
              self.forward_steps(steps)
+             return True
       # If things are closer, do nothing.
       # If nothing is moving, do nothing, for now
-
+    
 
    def follow_line(self):
       # Try to follow a line on the floor.
@@ -305,6 +313,16 @@ class Robot:
             self.wander()
 
 
+   def play(self):
+      # This is a mode which tries to avoid close objects,
+      # follow moving objects.
+      # And, if there is nothing else to do, wander.
+      status = self.avoid()
+      if not status:
+          status = self.follow()
+      if not status:
+          self.wander()
+
 
    def wander(self, distance_to_move = 0.0):
       # This is called about once a second by the update function.
@@ -318,7 +336,7 @@ class Robot:
           # turn right
           degrees = random.randint(60, 90)
           self.turn(degrees)
-      else:
+      elif new_action == 1:
           if self.forward_distance < MIDDLE_DISTANCE and self.forward_distance > 0:
               if self.reverse_distance > TOO_CLOSE:
               # Something in the way, attempt to reverse
@@ -382,6 +400,8 @@ class Robot:
            self.goto_position()
        elif self.action == ACTION_ART:
            self.create_art()
+       elif self.action == ACTION_PLAY:
+           self.play()
 
 
 
@@ -490,6 +510,8 @@ class Robot:
 
 
    def get_mode(self):
+       if self.action == ACTION_ART:
+           return "Creating Art"
        if self.action == ACTION_AVOID:
            return "Avoiding"
        if self.action == ACTION_FOLLOW:
@@ -502,6 +524,8 @@ class Robot:
            return "Following white line"
        if self.action == ACTION_LINE_BLACK:
            return "Following black line"
+       if self.action == ACTION_PLAY:
+           return "Playing"
        if self.action == ACTION_WANDER:
            return "Wandering"
        return "Manual"
@@ -540,7 +564,11 @@ class Robot:
        self.halt()
        self.shape_size = shape_size
        
-       
+   
+   def enter_play_mode(self):
+       self.action = ACTION_PLAY
+       self.halt()
+    
    def enter_manual_mode(self):
        self.action = ACTION_MANUAL
        self.halt()
