@@ -6,6 +6,8 @@ import network
 import _thread
 from machine import Pin
 from robot import Robot
+import bluetooth
+from ble_simple_peripheral import BLESimplePeripheral
 
 
 # Network credentials
@@ -20,6 +22,11 @@ led = Pin("LED", Pin.OUT)
 pico_blinking = 0
 
 robot = Robot()
+
+# Create a Bluetooth Low Energy (BLE) object
+ble = bluetooth.BLE()
+# Create an instance of the BLESimplePeripheral class with the BLE object
+bluetooth_connection = BLESimplePeripheral(ble)
 
 
 def enable_networking(wait_time):
@@ -113,8 +120,12 @@ def Reset_Everything():
 
 def Update_Everything():
     global robot
+    global bluetooth_connection
     
     while True:
+        if bluetooth_connection.is_connected():
+           bluetooth_connection.on_write(handle_bluetooth)
+           
         do_blinking()
         robot.update()
         time.sleep(1)
@@ -802,7 +813,8 @@ def parse_incoming_command(command, client_socket):
     else:
        send_string = "Command not recognized.\n"
 
-    client_socket.send( send_string.encode() )
+    if client_socket:
+        client_socket.send( send_string.encode() )
     return return_value
 
 
@@ -810,22 +822,23 @@ def parse_incoming_command(command, client_socket):
 def create_network_service(host='0.0.0.0', port=DEFAULT_PORT):
     server_running = True
     
+    _thread.start_new_thread(Update_Everything, ())
     # Create a socket object
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     bind_completed = False
     while not bind_completed:
-       try:
-           server_socket.bind( (host, port) )
-           bind_completed = True
-       except:
-           print("Unable to bind port. Trying again in ten seconds.")
-           time.sleep(10)
+        try:
+          server_socket.bind( (host, port) )
+          bind_completed = True
+        except:
+          print("Unable to bind port. Trying again in ten seconds.")
+          time.sleep(10)
            
     # Listen for incoming connections
     server_socket.listen(5)
     print(f"Server listening on {host}:{port}")
 
-    _thread.start_new_thread(Update_Everything, ())
+    # _thread.start_new_thread(Update_Everything, ())
     while server_running:
         # Accept new connections
         client_socket, address = server_socket.accept()
@@ -856,6 +869,13 @@ def create_network_service(host='0.0.0.0', port=DEFAULT_PORT):
         client_socket.close()
         
 
+
+# Define a callback function to handle received data
+def handle_bluetooth(new_data):
+    new_string = new_data.decode()
+    # print("Data received: ", new_string)  # Print the received data
+    status = parse_incoming_command(new_string, False)
+    
 
 def main():
     
