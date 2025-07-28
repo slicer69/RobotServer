@@ -723,8 +723,14 @@ def hold_pen(command_line):
 
 
 
+# Parse command, call any appropriate function to match the request.
+# Return response to client_socket. If client_socket is False then
+# we assume the request come from Bluetooth and send a response over
+# BT.
 def parse_incoming_command(command, client_socket):
     global robot
+    global bluetooth_connection
+
     command_and_args = command.split()
     return_value = True
     args_length = len(command_and_args)
@@ -815,6 +821,8 @@ def parse_incoming_command(command, client_socket):
 
     if client_socket:
         client_socket.send( send_string.encode() )
+    else:
+        bluetooth_connection.send( send_string )
     return return_value
 
 
