@@ -829,8 +829,6 @@ def parse_incoming_command(command, client_socket):
 
 def create_network_service(host='0.0.0.0', port=DEFAULT_PORT):
     server_running = True
-    
-    _thread.start_new_thread(Update_Everything, ())
     # Create a socket object
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     bind_completed = False
@@ -888,6 +886,7 @@ def handle_bluetooth(new_data):
 def main():
     
     # Init pico
+    _thread.start_new_thread(Update_Everything, ())
     delay = 1
     my_address = enable_networking(delay)
     if my_address:
