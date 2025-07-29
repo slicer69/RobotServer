@@ -27,6 +27,11 @@ and listens on network port 40801. Connecting to it is usually as easy as runnin
 Commands are parsed and then, as appropriate, sent to the Robot class to manipulate the Kitronik
 robot.
 
+The Pico W can also accept Bluetooth connections and instruvtions over Bluetooth. This is helpful
+when the robot is in environments without wi-fi access. The Android app "Serial Bluetooth Terminal
+(also known as de.kai.morich.serial_bluetooth_terminal) can be used to connect to the robot. The
+robot displays the Bluetooth name "r-robot".
+
 
 ## main.py.local
 
@@ -68,7 +73,7 @@ to the robot. The two axis sticks turn the robot and drive it forward or backwar
 The A, B, Y, and X buttons change the colour of the robot's lights.
 
 The left button (L) puts the robot into automated Wander mode while the right button (R)
-calls the robot back to its starting point (home). The two trigger buttons tell the
+raises and lowers the robot's pen arm if one is attached. The two trigger buttons tell the
 robot to stop/halt. The connection can be dropped by pressing + or -. A list of
 commands is displayed in the terminal.
 
@@ -89,4 +94,10 @@ of the Pico and (optionally) the robot.
 
 This is an example command file which can be sent to the Pico W by the send-batch script
 mentioned above. It sends a few commands, blinks the Pico's light on/off, and then disconnects.
+
+
+## ble_simple_peripheral.py and ble_advertising.py
+
+These two libraries handle setting up and receiving Bluetooth connections. They do not
+get run directly, but are used as dependencies to main.py.
 
