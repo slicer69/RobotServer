@@ -622,7 +622,6 @@ class Robot:
        self.halt()
        self.goto_x = 0.0
        self.goto_y = 0.0
-       self.pen_up()
 
        
    def enter_wander_mode(self):
