@@ -51,7 +51,7 @@ RIGHT_MOTOR_ADJUST = 1.0
 # Ideally, it should be 1.0, but if an engine is stronger or weaker
 # we can adjust this. Smaller numbers make the turn angle smaller,
 # larger numbers increase the turn.
-RIGHT_TURN_MODIFIER = 0.82
+RIGHT_TURN_MODIFIER = 0.70
 LEFT_TURN_MODIFIER = 0.80
 
 # From here on, do not change variables unless you need to make
@@ -68,6 +68,8 @@ ACTION_AVOID = 6
 ACTION_GOTO = 7
 ACTION_ART = 8
 ACTION_PLAY = 9
+ACTION_TRACK_BLACK = 10
+ACTION_TRACK_WHITE = 11
 
 
 
@@ -205,12 +207,44 @@ class Robot:
       # If nothing is moving, do nothing, for now
     
 
+   def avoid_line(self):
+      # When we find a line on the floor of the specified colour we avoid it.
+      left_eye = self.buggy.getRawLFValue("l")
+      centre_eye = self.buggy.getRawLFValue("c")
+      right_eye = self.buggy.getRawLFValue("r")
+
+      avoided_line = False
+      if self.action == ACTION_TRACK_BLACK:
+          if left_eye > right_eye or left_eye > centre_eye:
+              if left_eye > self.light_barrier:
+                  self.turn(20)
+                  avoided_line = True
+          elif right_eye > left_eye or right_eye > centre_eye:
+              if right_eye > self.light_barrier:
+                  self.turn(-20)
+                  avoided_line = True
+
+      elif self.action == ACTION_TRACK_WHITE:
+          if left_eye < right_eye or left_eye < centre_eye:
+              if left_eye < self.light_barrier:
+                  self.turn(20)
+                  avoided_line = True
+          elif right_eye < left_eye or right_eye < centre_eye:
+              if right_eye < self.light_barrier:
+                  self.turn(-20)
+                  avoided_line = True
+          
+      if not avoided_line:
+          self.forward_steps(FOLLOW_LINE_STEP)
+          
+
+
    def follow_line(self):
       # Try to follow a line on the floor.
       left_eye = self.buggy.getRawLFValue("l")
       centre_eye = self.buggy.getRawLFValue("c")
       right_eye = self.buggy.getRawLFValue("r")
-    
+
       on_line = False
       # Black should be a high value, around 30,000 or higher
       # White should be low, below 25,000
@@ -394,6 +428,8 @@ class Robot:
            self.goto_position()
        elif self.action == ACTION_LINE_BLACK or self.action == ACTION_LINE_WHITE:
            self.follow_line()
+       elif self.action == ACTION_TRACK_BLACK or self.action == ACTION_TRACK_WHITE:
+           self.avoid_line()
        elif self.action == ACTION_AVOID:
            self.avoid()
        elif self.action == ACTION_GOTO:
@@ -526,6 +562,10 @@ class Robot:
            return "Following black line"
        if self.action == ACTION_PLAY:
            return "Playing"
+       if self.action == ACTION_TRACK_WHITE:
+           return "Avoiding white lines"
+       if self.action == ACTION_TRACK_BLACK:
+           return "Avoiding black lines"
        if self.action == ACTION_WANDER:
            return "Wandering"
        return "Manual"
@@ -556,6 +596,14 @@ class Robot:
            self.action = ACTION_LINE_WHITE
        else:
            self.action = ACTION_LINE_BLACK
+       self.halt()
+
+
+   def enter_track_mode(self, colour):
+       if colour == "white":
+          self.action = ACTION_TRACK_WHITE
+       else:
+          self.action = ACTION_TRACK_BLACK
        self.halt()
 
 

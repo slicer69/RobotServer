@@ -85,6 +85,7 @@ def display_help():
    send_string += "square [length] - move in a square (forward, right, forward, right)\n"
    send_string += "status - get status report from the buggy\n"
    send_string += "step [steps] - move the buggy forward.\n"
+   send_string += "track [black/white] - avoid lines on the floor. Defaults to black.\n"
    send_string += "triangle [length] - move the buggy in the shape of a triangle.\n"
    send_string += "turn <degrees> - turn the buggy left or right a number of degrees\n"
    send_string += "turnto <degrees> - turn the buggy to the specified direction\n"
@@ -218,6 +219,18 @@ def follow_line(command_line):
 
    robot.enter_line_follow_mode(line_colour)
    return_string = "Now following any " + line_colour + " line I can find.\n"
+   return return_string
+
+
+def stay_inside_track(command_line):
+   global robot
+   line_colour = "black"
+   if len(command_line) >= 2:
+      if command_line[1] == "white":
+         line_colour = "white"
+
+   robot.enter_track_mode(line_colour)
+   return_string = "Now staying inside any " + line_colour + " lines I find.\n"
    return return_string
 
 
@@ -806,6 +819,8 @@ def parse_incoming_command(command, client_socket):
         send_string = move_forward(command_and_args)
     elif cmd == "temp":
         send_string = sense_temperature()
+    elif cmd == "track":
+        send_string = stay_inside_track(command_and_args)
     elif cmd == "triangle":
         send_string = move_in_triangle(command_and_args)
     elif cmd == "turn":
