@@ -1,2 +1,13 @@
-Teach robot to avoid white/black lines? Allow it to stay inside a shape or track?
+See if robot can detect different colours as it drives over them?
+Different colours do give different light levels. Yellow the
+lowest, then red, then blue.
+Difference of about 1,000 per colour change in low light or 5,000 in high light.
+eg. 8k, 9k, 11k vs 7k, 12k, 17k
+
+Seems to be consistent across materials.
+Add "colour" command. Can set or detect colours.
+colour red <level> (set approximate level)
+colour blue <level>
+colour yellow <level>
+colour detect  (change lights to match colour under buggy)
 
