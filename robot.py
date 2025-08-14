@@ -98,7 +98,7 @@ class Robot:
        self.set_light_level(LIGHT_LEVEL)
        self.set_lights([0,1,2,3], self.buggy.GREEN)
        self.lights_auto = True
-       self.buggy.setBrightness(LIGHT_LEVEL)
+       self.buggy.setBrightness(self.light_level)
        self.buggy.show()
        self.buggy.silence()
        self.speed = 0
@@ -486,6 +486,8 @@ class Robot:
    def set_light_level(self, new_level):
        if new_level >= 1 and new_level <= 100:
           self.light_level = new_level
+          self.buggy.setBrightness(self.light_level)
+          self.buggy.show()
           return True
        return False
 
