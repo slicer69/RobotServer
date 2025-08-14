@@ -9,5 +9,16 @@ Add "colour" command. Can set or detect colours.
 colour red <level> (set approximate level)
 colour blue <level>
 colour yellow <level>
-colour detect  (change lights to match colour under buggy)
+colour detect (report the coloru under us) 
+colour match (change lights to match colour under buggy)
+
+
+Make it possible to adjust left/right engine power so it does not
+need to adjusted in the code.
+
+Make it possible to adjust turn time modifier so we do not need to
+adjust it in code.
+
+Make it possible to adjust light brightness.
+(Finished - test)
 

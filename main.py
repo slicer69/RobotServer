@@ -13,8 +13,7 @@ from ble_simple_peripheral import BLESimplePeripheral
 # Network credentials
 DEFAULT_PORT = 40801
 # Replace the values here with your own network login information.
-NETWORK_NAME = "Pineapple"
-NETWORK_PASSWORD = "Winter2024"
+NETWORK_FILE = "network.txt"
 
 # The Pico board's LED
 led = Pin("LED", Pin.OUT)
@@ -29,12 +28,28 @@ ble = bluetooth.BLE()
 bluetooth_connection = BLESimplePeripheral(ble)
 
 
-def enable_networking(wait_time):
+# Read credentials from the file network.txt
+# File has the format:
+# network-name
+# network-password
+def read_network_credentials():
+   my_file = open(NETWORK_FILE, "r")
+   if my_file:
+       lines = my_file.readlines()
+       if len(lines) >= 2:
+          wifi_name = lines[0].strip()
+          wifi_password = lines[1].strip()
+          print("Network credentials: " + wifi_name + ":" + wifi_password + "\n")
+          return [wifi_name, wifi_password]
+   return False
+
+
+def enable_networking(wait_time, credentials):
   attempts = 0
   time.sleep(wait_time)
   wlan = network.WLAN(network.STA_IF)
   wlan.active(True)
-  wlan.connect(NETWORK_NAME, NETWORK_PASSWORD)
+  wlan.connect(credentials[0], credentials[1])
       
   while wlan.status() != 3 and attempts < 10:
      time.sleep(1)
@@ -63,6 +78,7 @@ def display_help():
    send_string += "Tasks the robot knows how to do:\n\n"
    send_string += "art <line_length> - create random artwork of a given size.\n"
    send_string += "avoid - try to move away from nearby objects.\n"
+   send_string += "bright [percent] - set the brightness of buggy lights.\n"
    send_string += "circle <radius> - drive in a circle\n"
    send_string += "direction [degrees] - ask/tell the robot which way it is facing.\n"
    send_string += "distance - distance to nearest object in cm\n"
@@ -735,6 +751,27 @@ def hold_pen(command_line):
    return send_string
 
 
+# Get or set the brightness level of the buggy's lights.
+def set_light_brightness(command_line):
+   global robot
+
+   if len(command_line) < 2:
+      brightness = robot.get_light_level()
+      send_string = "Current light level is: " + str(brightness) + "%\n"
+      return send_string
+
+   try:
+      new_brightness = int(command_line[1])
+   except:
+      send_string = "Unable to recognize " + command_line[1] + ". Need a number from 1-100\n"
+      return send_string
+   if new_brightness < 1 or new_brightness > 100:
+      send_string = "Please provide a number in the range of 1-100.\n"
+      return send_string
+   robot.set_light_level(new_brightness)
+   send_string = "Setting light level to " + str(new_brightness) + "%\n"
+   return send_string
+
 
 # Parse command, call any appropriate function to match the request.
 # Return response to client_socket. If client_socket is False then
@@ -757,6 +794,8 @@ def parse_incoming_command(command, client_socket):
         send_string = create_art(command_and_args)
     elif cmd == "avoid":
         send_string = avoid_mode()
+    elif cmd == "bright":
+        send_string = set_light_brightness(command_and_args)
     elif cmd == "circle":
         send_string = move_in_circle(command_and_args)
     elif cmd == "direction":
@@ -903,7 +942,10 @@ def main():
     # Init pico
     _thread.start_new_thread(Update_Everything, ())
     delay = 1
-    my_address = enable_networking(delay)
+    my_address = False
+    credentials = read_network_credentials()
+    if credentials:
+        my_address = enable_networking(delay, credentials)
     if my_address:
        print("My IP address ", my_address)
        led.value(1)

@@ -95,6 +95,7 @@ class Robot:
        self.direction = 0
        self.get_forward_distance()
        self.get_reverse_distance()
+       self.set_light_level(LIGHT_LEVEL)
        self.set_lights([0,1,2,3], self.buggy.GREEN)
        self.lights_auto = True
        self.buggy.setBrightness(LIGHT_LEVEL)
@@ -475,6 +476,18 @@ class Robot:
        self.x = x
        self.y = y
        return True
+
+
+
+   def get_light_level(self):
+       return self.light_level
+
+
+   def set_light_level(self, new_level):
+       if new_level >= 1 and new_level <= 100:
+          self.light_level = new_level
+          return True
+       return False
 
 
    def get_speed(self):

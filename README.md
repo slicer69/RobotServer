@@ -7,14 +7,19 @@ Please note, for the robot to work, the PicoAutonomousRobotics.py file from
 https://github.com/KitronikLtd/Kitronik-Pico-Autonomous-Robotics-Platform-MicroPython must be
 installed on your Raspberry Pi Pico.
 
+If you plan to connect to the robot over a wireless network, you must create a file called
+network.txt on your Pico W and save your credentials in the text file. The first line should
+contain the network's name and the secone line should hold the password.
+
 This repository contains the following files and functioanlity:
 
 ## main.py
 
 This file contains the networking components and chat server for the Pico-powered robot. This file
 must be installed on the Pico with the fielname "main.py" so that it runs when the Pico powers on.
-This program connects to a local network using the credentials stored in the variables "NETWORK_NAME" and
-"NETWORK_PASSWORD", which are located near the top of the main.py file. These variables can be changed to suit your network.
+This program connects to a local network using the credentials stored in a file file called
+"network.txt". The network.txt file should place the wireless network name on the first line and the
+wifi password on the second file.
 
 Once connected to the network this program waits for a network connection from a plain-text client,
 such as telnet or nc. It then processes commands sent to it. The client can send the command "help"
@@ -27,7 +32,7 @@ and listens on network port 40801. Connecting to it is usually as easy as runnin
 Commands are parsed and then, as appropriate, sent to the Robot class to manipulate the Kitronik
 robot.
 
-The Pico W can also accept Bluetooth connections and instruvtions over Bluetooth. This is helpful
+The Pico W can also accept Bluetooth connections and instructions over Bluetooth. This is helpful
 when the robot is in environments without wi-fi access. The Android app "Serial Bluetooth Terminal
 (also known as de.kai.morich.serial_bluetooth_terminal) can be used to connect to the robot. The
 robot displays the Bluetooth name "r-robot".
