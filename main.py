@@ -80,6 +80,7 @@ def display_help():
    send_string += "avoid - try to move away from nearby objects.\n"
    send_string += "bright [percent] - set the brightness of buggy lights.\n"
    send_string += "circle <radius> - drive in a circle\n"
+   send_string += "colour [red|yellow|blue|detect|match] [light_level]- detect colour under buggy.\n"
    send_string += "direction [degrees] - ask/tell the robot which way it is facing.\n"
    send_string += "distance - distance to nearest object in cm\n"
    send_string += "follow - try to follow moving objects in front of the buggy.\n"
@@ -773,6 +774,56 @@ def set_light_brightness(command_line):
    return send_string
 
 
+
+# This is a bit complex. The "colour" command can work in a few ways,
+# depending on its arguments.
+# When "colour" has no arguments, it returns the assumed light energy
+# levels of RED, YELLOW, and BLUE.
+# When we pass "colour" the argument "detect" it will try to
+# guess the colour under the buggy.
+# When we pass "colour" the work "match" the buggy's lights will change
+# colour to match what material it is driving over.
+# We can also pass "colour" two arguments, a colour and a light level.
+# This changes the light level associated with colours.
+def colour_detect(command_line):
+   global robot
+
+   # No argument, return colour light levels
+   if len(command_line) < 2:
+      colours = robot.get_colour_levels()
+      send_string = "Red: " + str(colours[0]) + "\n"
+      send_string += "Yellow: " + str(colours[1]) + "\n"
+      send_string += "Blue: " + str(colours[2]) + "\n\n"
+      return send_string
+
+   # We want to detect the colour under us.
+   if command_line[1] == "detect" or command_line[1] == "match":
+      if command_line[1] == "detect":
+          found = robot.detect_colour_below(False)
+      else:
+          found = robot.detect_colour_below(True) 
+      if found:
+         send_string = "Detected colour: " + found + "\n"
+      else:
+         send_string = "Detected colour: none\n"
+      return send_string
+
+   if len(command_line) < 3:
+       send_string = "I did not understand your request.\n"
+       return send_string
+   # Last chance - set colours
+   try:
+      new_level = int(command_line[2])
+   except:
+      new_level = -1
+   result = robot.set_colour_levels(new_level, command_line[1])
+   if result:
+      send_string = "Colour level changed successfully for " + command_line[1] + "\n"
+   else:
+      send_string = "Did not understand the colour or the level. Colours are red, yellow, blue.\n"
+   return send_string
+
+
 # Parse command, call any appropriate function to match the request.
 # Return response to client_socket. If client_socket is False then
 # we assume the request come from Bluetooth and send a response over
@@ -798,6 +849,8 @@ def parse_incoming_command(command, client_socket):
         send_string = set_light_brightness(command_and_args)
     elif cmd == "circle":
         send_string = move_in_circle(command_and_args)
+    elif cmd == "colour":
+        send_string = colour_detect(command_and_args)
     elif cmd == "direction":
         send_string = set_direction(command_and_args)
     elif cmd == "distance":

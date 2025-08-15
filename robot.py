@@ -74,6 +74,10 @@ ACTION_TRACK_WHITE = 11
 
 
 LIGHT_BARRIER = 35000
+LIGHT_RED = 12000
+LIGHT_YELLOW = 7000
+LIGHT_BLUE = 17000
+
 FOLLOW_LINE_STEP = 0.1
 WANDER_STEP = 0.3
 
@@ -106,8 +110,10 @@ class Robot:
        self.action = ACTION_MANUAL
        self.pen_up()
        self.shape_size = 0.1
-       
-     
+       self.detect_red = LIGHT_RED   
+       self.detect_yellow = LIGHT_YELLOW
+       self.detect_blue = LIGHT_BLUE
+
 
    def halt(self):
        self.buggy.motorOff("l")
@@ -860,3 +866,52 @@ class Robot:
         self.turn(90)
         return True
     
+
+
+   # Report the current energy levels of each colour.
+   # Returns a list with RED, YELLOW, BLUE detection level.
+   def get_colour_levels(self):
+        return [self.detect_red, self.detect_yellow, self.detect_blue]
+
+
+   # Set a light detection level for a colour.
+   # Accepts the level and "red", "yellow", or "blue".
+   def set_colour_levels(self, new_level, the_colour):
+       if new_level < 0 or new_level > 50000:
+          return False
+       if the_colour == "red":
+          self.detect_red = new_level
+       elif the_colour == "yellow":
+          self.detect_yellow = new_level
+       elif the_colour == "blue":
+          self.detect_blue = new_level
+       else:
+          return False
+       return True
+ 
+
+   # Try to figure out what the colour beneath us is.
+   def detect_colour_below(self, make_us_match):
+      centre_eye = self.buggy.getRawLFValue("c")
+      # We have the colour level, compare it to colours we know
+      delta_red = abs(self.detect_red - centre_eye)
+      delta_yellow = abs(self.detect_yellow - centre_eye)
+      delta_blue = abs(self.detect_blue - centre_eye)
+
+      if delta_red < delta_yellow and delta_red < delta_blue:
+         colour = self.buggy.RED
+         colour_name = "red"
+      elif delta_yellow < delta_red and delta_yellow < delta_blue:
+         colour = self.buggy.YELLOW
+         colour_name = "yellow"
+      elif delta_blue < delta_red and delta_blue < delta_yellow:
+         colour = self.buggy.BLUE
+         colour_name = "blue"
+
+      # Include light level in the name to help with context.
+      colour_name += " - (" + str(centre_eye) + ")"
+      if make_us_match:
+         self.lights_auto = False
+         self.set_lights([0,1,2,3], colour)
+      return colour_name
+
